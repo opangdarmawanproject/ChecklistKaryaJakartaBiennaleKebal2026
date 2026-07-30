@@ -65,6 +65,9 @@
 </head>
 <body class="text-slate-800 antialiased min-h-screen flex flex-col">
 
+    <!-- Wrapper khusus ekspor JPG agar Header ikut ter-capture -->
+    <div id="export-container" class="flex flex-col min-h-screen bg-[#f8fafc]">
+
     <!-- Header -->
     <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
@@ -78,7 +81,7 @@
                 </div>
             </div>
             
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 export-hide">
                 <!-- Export Menu -->
                 <button onclick="exportPrint()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 flex items-center gap-2 rounded-lg font-medium transition shadow-sm text-sm" title="Print Data">
                     <i class="fa-solid fa-print"></i> <span class="hidden md:inline">Print</span>
@@ -176,6 +179,8 @@
         </div>
 
     </main>
+    
+    </div> <!-- Akhir dari export-container -->
 
     <!-- Form Modal (Add / Edit) -->
     <div id="formModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
@@ -927,7 +932,8 @@
             const elementsToHide = document.querySelectorAll('.export-hide, #controls-area');
             elementsToHide.forEach(el => el.style.display = 'none');
             
-            const elementToCapture = document.querySelector('main');
+            // Menargetkan wrapper 'export-container' agar mencakup Header Jakarta Biennale
+            const elementToCapture = document.getElementById('export-container');
             
             try {
                 const canvas = await html2canvas(elementToCapture, {
@@ -957,43 +963,80 @@
                 return;
             }
             
-            showToast("Menyiapkan file Excel...", "info");
+            showToast("Menyiapkan file Excel beserta gambar...", "info");
             
-            // 1. Format data ke bentuk Tabular untuk Excel
-            const dataToExport = artworksData.map((item, index) => ({
-                "No": index + 1,
-                "Nama Seniman": item.artist,
-                "Judul Karya": item.title,
-                "Kategori": item.category,
-                "Kondisi": item.condition,
-                "Status Logistik": item.status,
-                "Jumlah (Qty)": item.quantity,
-                "Dimensi": item.dimensions || "-",
-                "Catatan Tambahan": item.notes || "-"
-            }));
+            // Membuat template HTML table untuk diekspor sebagai .xls
+            // Ini memungkinkan base64 image dan warna UI dirender oleh Excel
+            let tableHtml = `
+            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    table { border-collapse: collapse; width: 100%; font-family: sans-serif; }
+                    th { background-color: #0f172a; color: #ffffff; padding: 12px; font-size: 14px; text-align: left; border: 1px solid #cbd5e1; }
+                    td { padding: 10px; border: 1px solid #cbd5e1; vertical-align: top; font-size: 13px; color: #334155; }
+                    .img-cell { width: 140px; text-align: center; vertical-align: middle; }
+                    img { max-width: 120px; max-height: 120px; object-fit: cover; border-radius: 4px; }
+                    h2 { color: #0f172a; margin-bottom: 5px; }
+                    h4 { color: #3b82f6; margin-top: 0; margin-bottom: 20px; font-style: italic; }
+                </style>
+            </head>
+            <body>
+                <h2>Jakarta Biennale 2026</h2>
+                <h4>'KEBAL' - Checklist Karya Seniman</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Foto Karya</th>
+                            <th>Seniman & Judul</th>
+                            <th>Detail (Kategori, Qty, Dimensi)</th>
+                            <th>Kondisi Fisik</th>
+                            <th>Status Logistik</th>
+                            <th>Catatan Tambahan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            artworksData.forEach((item, index) => {
+                const imgTag = item.image ? `<img src="${item.image}">` : '<i>Tidak ada foto</i>';
+                
+                tableHtml += `
+                    <tr>
+                        <td style="text-align: center; vertical-align: middle;">${index + 1}</td>
+                        <td class="img-cell">${imgTag}</td>
+                        <td>
+                            <strong style="font-size: 15px; color: #0f172a;">${item.title}</strong><br>
+                            <span style="color: #3b82f6;">${item.artist}</span>
+                        </td>
+                        <td>
+                            Kategori: <strong>${item.category}</strong><br>
+                            Jumlah: ${item.quantity}<br>
+                            Dimensi: ${item.dimensions || '-'}
+                        </td>
+                        <td>${item.condition}</td>
+                        <td>${item.status}</td>
+                        <td>${item.notes || '-'}</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += `
+                    </tbody>
+                </table>
+            </body>
+            </html>
+            `;
 
             try {
-                // 2. Buat Worksheet
-                const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-                
-                // 3. Atur lebar kolom (Column Widths) agar dokumen Excel lebih rapi saat dibuka
-                const wscols = [
-                    {wch: 5},  // No
-                    {wch: 25}, // Nama Seniman
-                    {wch: 35}, // Judul Karya
-                    {wch: 15}, // Kategori
-                    {wch: 18}, // Kondisi
-                    {wch: 18}, // Status Logistik
-                    {wch: 12}, // Qty
-                    {wch: 20}, // Dimensi
-                    {wch: 40}  // Catatan
-                ];
-                worksheet['!cols'] = wscols;
-
-                // 4. Buat Workbook (File Excel utuh) dan simpan
-                const workbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(workbook, worksheet, "Checklist Karya");
-                XLSX.writeFile(workbook, "Checklist_Jakarta_Biennale_2026.xlsx");
+                const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'Checklist_JB_2026_dengan_Foto.xls';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
                 
                 showToast("Berhasil mengekspor ke dokumen Excel", "success");
             } catch (err) {
