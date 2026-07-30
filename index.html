@@ -381,7 +381,7 @@
         function setupRealtimeListener() {
             if (!currentUser) return;
             
-            const artworksRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'artworks');
+            const artworksRef = collection(db, 'artifacts', appId, 'public', 'data', 'artworks');
             const q = query(artworksRef);
 
             onSnapshot(q, (snapshot) => {
@@ -408,8 +408,7 @@
         imgInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
-                // Membaca dan kompresi gambar agar muat di batas 1MB Firestore
-                compressImage(file, 1000, 1000, 0.7).then(base64 => {
+                compressImage(file, 800, 800, 0.6).then(base64 => {
                     base64Image = base64;
                     showImagePreview(base64);
                 });
@@ -551,7 +550,7 @@
             try {
                 if (db) {
                     const idToSave = currentEditId || crypto.randomUUID();
-                    const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'artworks', idToSave);
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'artworks', idToSave);
                     
                     if (!currentEditId) {
                         newArtwork.createdAt = new Date().toISOString();
@@ -594,7 +593,7 @@
                 async () => {
                     if(db && currentUser) {
                         try {
-                            await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'artworks', id));
+                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'artworks', id));
                             showToast("Karya berhasil dihapus", "success");
                         } catch (e) {
                             showToast("Gagal menghapus", "error");
