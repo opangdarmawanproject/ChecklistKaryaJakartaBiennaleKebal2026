@@ -2,7 +2,9 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Meta viewport sangat ketat agar terasa seperti Native App, mencegah zoom layar yang tidak sengaja -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
     <title>Checklist JB 2026 'KEBAL'</title>
     
     <!-- Tailwind CSS untuk Styling -->
@@ -14,20 +16,20 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Ekspor Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f8fafc;
+            /* Mencegah blok biru saat tombol ditekan di Android WebView (AppMySite) */
+            -webkit-tap-highlight-color: transparent; 
+            /* Mengurangi efek pull-to-refresh default browser agar terasa seperti app asli */
+            overscroll-behavior-y: contain; 
         }
         
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        /* Custom Scrollbar Elegan */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
         /* Zoom Modal Image Container */
@@ -35,260 +37,296 @@
             cursor: grab;
             transition: transform 0.1s ease-out;
             transform-origin: center center;
+            will-change: transform;
         }
         #zoom-image-container:active {
             cursor: grabbing;
         }
 
+        /* Spinner Animasi */
         .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3b82f6;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 32px;
+            height: 32px;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
+        /* Menyembunyikan scrollbar di menu navigasi horizontal (Mobile) */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Mencegah seleksi teks tidak sengaja pada elemen UI interaktif */
+        .no-select {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
         /* Print Styles: Membersihkan UI berlebih saat dicetak */
         @media print {
             body { background-color: #fff; }
-            header, #controls-area, .no-print, #toastContainer, #formModal, #zoomModal { display: none !important; }
+            header, #controls-area, .no-print, #toastContainer, #formModal, #zoomModal, .fab-btn { display: none !important; }
             main { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
             .grid { grid-template-columns: repeat(2, 1fr) !important; gap: 1rem !important; }
             .bg-white { border: 1px solid #e2e8f0 !important; box-shadow: none !important; page-break-inside: avoid; }
             #artworkGrid { display: grid !important; }
             #loadingState, #emptyState { display: none !important; }
-            .h-56 { height: 180px !important; } /* Mengubah tinggi foto saat di-print */
+            .img-container { height: 180px !important; } 
         }
     </style>
 </head>
-<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="text-slate-800 antialiased min-h-screen flex flex-col selection:bg-blue-200 selection:text-blue-900">
 
     <!-- Wrapper khusus ekspor JPG agar Header ikut ter-capture -->
-    <div id="export-container" class="flex flex-col min-h-screen bg-[#f8fafc]">
+    <div id="export-container" class="flex flex-col min-h-screen bg-[#f8fafc] pb-24 md:pb-0">
 
-    <!-- Header -->
-    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center text-xl font-bold shadow-sm">
-                    JB
+        <!-- Header -->
+        <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-30 no-select">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center text-xl font-bold shadow-sm shrink-0">
+                        JB
+                    </div>
+                    <div class="truncate">
+                        <h1 class="text-lg md:text-xl font-bold leading-tight truncate tracking-wide">Jakarta Biennale 2026</h1>
+                        <p class="text-[11px] md:text-xs text-blue-300 font-medium tracking-widest truncate uppercase opacity-90">Checklist 'KEBAL'</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-xl font-bold leading-tight">Jakarta Biennale 2026</h1>
-                    <p class="text-xs text-blue-300 font-medium tracking-wider">'KEBAL' - Checklist Karya Seniman</p>
+                
+                <div class="flex items-center gap-2 export-hide shrink-0">
+                    <!-- Indikator Sinkronisasi (Offline/Online) -->
+                    <div id="syncIndicator" class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-xs font-medium mr-2">
+                        <div class="w-2 h-2 rounded-full bg-emerald-400" id="syncDot"></div>
+                        <span id="syncText" class="text-slate-300">Online</span>
+                    </div>
+
+                    <!-- Export Menu (Sembunyi di HP, tampil di Layar Besar) -->
+                    <button onclick="window.exportPrint()" class="bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white px-3 py-2 items-center gap-2 rounded-lg font-medium transition shadow-sm text-sm hidden md:flex outline-none" title="Print Data">
+                        <i class="fa-solid fa-print"></i>
+                    </button>
+                    <button onclick="window.exportJPG()" class="bg-slate-700 hover:bg-slate-600 active:bg-slate-800 text-white px-3 py-2 items-center gap-2 rounded-lg font-medium transition shadow-sm text-sm hidden sm:flex outline-none" title="Export JPG">
+                        <i class="fa-solid fa-file-image"></i> <span class="hidden lg:inline">JPG</span>
+                    </button>
+                    <button onclick="window.exportExcel()" class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white px-3 py-2 flex items-center gap-2 rounded-lg font-medium transition shadow-sm text-sm outline-none" title="Export Excel">
+                        <i class="fa-solid fa-file-excel"></i> <span class="hidden md:inline">Excel</span>
+                    </button>
+                    
+                    <div class="w-px h-6 bg-slate-700 mx-1 hidden sm:block"></div>
+                    
+                    <!-- Action Buttons Desktop -->
+                    <button onclick="window.openFormModal()" class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 py-2 items-center gap-2 rounded-lg font-medium transition shadow-md text-sm sm:text-base hidden sm:flex outline-none">
+                        <i class="fa-solid fa-plus"></i> Tambah Karya
+                    </button>
                 </div>
             </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex flex-col gap-5 relative">
             
-            <div class="flex items-center gap-2 export-hide">
-                <!-- Export Menu -->
-                <button onclick="exportPrint()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 flex items-center gap-2 rounded-lg font-medium transition shadow-sm text-sm" title="Print Data">
-                    <i class="fa-solid fa-print"></i> <span class="hidden md:inline">Print</span>
-                </button>
-                <button onclick="exportJPG()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 flex items-center gap-2 rounded-lg font-medium transition shadow-sm text-sm" title="Export JPG">
-                    <i class="fa-solid fa-file-image"></i> <span class="hidden md:inline">JPG</span>
-                </button>
-                <button onclick="exportExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 flex items-center gap-2 rounded-lg font-medium transition shadow-sm text-sm" title="Export Excel">
-                    <i class="fa-solid fa-file-excel"></i> <span class="hidden md:inline">Excel</span>
-                </button>
+            <!-- Dashboard Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 no-select">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition-shadow">
+                    <div class="absolute -right-4 -top-4 w-16 h-16 bg-slate-50 rounded-full z-0 group-hover:scale-150 transition-transform duration-500"></div>
+                    <span class="text-slate-500 text-xs md:text-sm font-medium mb-1 z-10 relative">Total Karya</span>
+                    <span class="text-2xl md:text-3xl font-black text-slate-800 z-10 relative tracking-tight" id="stat-total">0</span>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition-shadow">
+                    <div class="absolute -right-4 -top-4 w-16 h-16 bg-emerald-50 rounded-full z-0 group-hover:scale-150 transition-transform duration-500"></div>
+                    <span class="text-slate-500 text-xs md:text-sm font-medium mb-1 z-10 relative">Diterima</span>
+                    <span class="text-2xl md:text-3xl font-black text-emerald-600 z-10 relative tracking-tight" id="stat-received">0</span>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition-shadow">
+                    <div class="absolute -right-4 -top-4 w-16 h-16 bg-amber-50 rounded-full z-0 group-hover:scale-150 transition-transform duration-500"></div>
+                    <span class="text-slate-500 text-xs md:text-sm font-medium mb-1 z-10 relative">Perbaikan</span>
+                    <span class="text-2xl md:text-3xl font-black text-amber-500 z-10 relative tracking-tight" id="stat-repair">0</span>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition-shadow">
+                    <div class="absolute -right-4 -top-4 w-16 h-16 bg-blue-50 rounded-full z-0 group-hover:scale-150 transition-transform duration-500"></div>
+                    <span class="text-slate-500 text-xs md:text-sm font-medium mb-1 z-10 relative">Instalasi</span>
+                    <span class="text-2xl md:text-3xl font-black text-blue-600 z-10 relative tracking-tight" id="stat-installed">0</span>
+                </div>
+            </div>
+
+            <!-- Controls: Search & Filter -->
+            <div id="controls-area" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-3 items-center justify-between no-select">
+                <div class="relative w-full md:w-96">
+                    <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" placeholder="Cari judul atau seniman..." class="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition text-sm">
+                </div>
                 
-                <div class="w-px h-6 bg-slate-700 mx-1 hidden sm:block"></div>
-                
-                <!-- Action Buttons -->
-                <button onclick="openFormModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 flex items-center gap-2 rounded-lg font-medium transition shadow-sm text-sm sm:text-base hidden sm:flex">
+                <div class="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 hide-scrollbar">
+                    <select id="filterCategory" class="px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white text-sm whitespace-nowrap min-w-max transition outline-none cursor-pointer">
+                        <option value="">Semua Kategori</option>
+                        <option value="Lukisan">Lukisan</option>
+                        <option value="Patung">Patung</option>
+                        <option value="Instalasi">Instalasi</option>
+                        <option value="Video Art">Video Art</option>
+                        <option value="Fotografi">Fotografi</option>
+                        <option value="Media Campuran">Media Campuran</option>
+                        <option value="Lainnya">Lainnya</option>
+                    </select>
+                    <select id="filterStatus" class="px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 focus:bg-white text-sm whitespace-nowrap min-w-max transition outline-none cursor-pointer">
+                        <option value="">Semua Status</option>
+                        <option value="Menunggu">Menunggu</option>
+                        <option value="Diterima">Diterima</option>
+                        <option value="Diinstalasi">Diinstalasi</option>
+                        <option value="Dikembalikan">Dikembalikan</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="flex flex-col items-center justify-center py-20 flex-1">
+                <div class="loader mb-4"></div>
+                <p class="text-slate-500 font-medium text-sm animate-pulse">Menyiapkan data dari brankas...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden flex-col items-center justify-center py-16 px-4 bg-white rounded-2xl border border-slate-200 border-dashed flex-1">
+                <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-box-open text-4xl text-slate-300"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800 mb-1">Belum ada karya</h3>
+                <p class="text-slate-500 mb-6 text-center max-w-sm text-sm">Brankas checklist karya masih kosong atau tidak ada hasil dari filter saat ini.</p>
+                <button onclick="window.openFormModal()" class="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-6 py-2.5 rounded-xl font-medium transition text-sm shadow-md shadow-blue-500/30 outline-none flex items-center gap-2">
                     <i class="fa-solid fa-plus"></i> Tambah Karya
                 </button>
-                <button onclick="openFormModal()" class="bg-blue-500 hover:bg-blue-600 text-white w-10 h-10 flex items-center justify-center rounded-lg font-medium transition shadow-sm sm:hidden">
-                    <i class="fa-solid fa-plus"></i>
-                </button>
             </div>
-        </div>
-    </header>
 
-    <!-- Main Content -->
-    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex flex-col gap-6">
-        
-        <!-- Dashboard Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-center">
-                <span class="text-slate-500 text-sm font-medium mb-1">Total Karya</span>
-                <span class="text-3xl font-bold text-slate-800" id="stat-total">0</span>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-center">
-                <span class="text-slate-500 text-sm font-medium mb-1">Diterima</span>
-                <span class="text-3xl font-bold text-emerald-600" id="stat-received">0</span>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-center">
-                <span class="text-slate-500 text-sm font-medium mb-1">Perlu Perbaikan</span>
-                <span class="text-3xl font-bold text-amber-500" id="stat-repair">0</span>
-            </div>
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-center">
-                <span class="text-slate-500 text-sm font-medium mb-1">Diinstalasi</span>
-                <span class="text-3xl font-bold text-blue-600" id="stat-installed">0</span>
-            </div>
-        </div>
-
-        <!-- Controls: Search & Filter -->
-        <div id="controls-area" class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div class="relative w-full md:w-96">
-                <i class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                <input type="text" id="searchInput" placeholder="Cari nama seniman atau judul karya..." class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <!-- Artwork Grid -->
+            <div id="artworkGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 hidden pb-10">
+                <!-- Cards inject via JS -->
             </div>
             
-            <div class="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-                <select id="filterCategory" class="px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm whitespace-nowrap min-w-max">
-                    <option value="">Semua Kategori</option>
-                    <option value="Lukisan">Lukisan</option>
-                    <option value="Patung">Patung</option>
-                    <option value="Instalasi">Instalasi</option>
-                    <option value="Video Art">Video Art</option>
-                    <option value="Fotografi">Fotografi</option>
-                    <option value="Media Campuran">Media Campuran</option>
-                    <option value="Lainnya">Lainnya</option>
-                </select>
-                <select id="filterStatus" class="px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm whitespace-nowrap min-w-max">
-                    <option value="">Semua Status</option>
-                    <option value="Menunggu">Menunggu</option>
-                    <option value="Diterima">Diterima</option>
-                    <option value="Diinstalasi">Diinstalasi</option>
-                    <option value="Dikembalikan">Dikembalikan</option>
-                </select>
-            </div>
-        </div>
+        </main>
+    </div> <!-- Akhir export-container -->
 
-        <!-- Loading State -->
-        <div id="loadingState" class="flex flex-col items-center justify-center py-20">
-            <div class="loader mb-4"></div>
-            <p class="text-slate-500 font-medium">Memuat data karya...</p>
-        </div>
+    <!-- Floating Action Button khusus Mobile App -->
+    <button onclick="window.openFormModal()" class="fab-btn fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-full flex items-center justify-center shadow-xl shadow-blue-500/40 hover:scale-105 transition-transform active:scale-95 sm:hidden z-40 outline-none">
+        <i class="fa-solid fa-plus text-xl"></i>
+    </button>
 
-        <!-- Empty State (Hidden by default) -->
-        <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 bg-white rounded-xl border border-slate-100 border-dashed">
-            <i class="fa-solid fa-palette text-6xl text-slate-300 mb-4"></i>
-            <h3 class="text-xl font-semibold text-slate-700 mb-2">Belum ada karya</h3>
-            <p class="text-slate-500 mb-6 text-center max-w-md">Data checklist karya masih kosong atau tidak ditemukan hasil yang sesuai dengan filter Anda.</p>
-            <button onclick="openFormModal()" class="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2 rounded-lg font-medium transition">
-                Tambah Karya Pertama
-            </button>
-        </div>
-
-        <!-- Artwork Grid -->
-        <div id="artworkGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 hidden">
-            <!-- Cards will be injected here via JS -->
-        </div>
-
-    </main>
-    
-    </div> <!-- Akhir dari export-container -->
+    <!-- Indikator Sync Mobile -->
+    <div id="mobileSyncIndicator" class="fixed bottom-6 left-6 z-40 px-3 py-1.5 rounded-full bg-slate-900/90 backdrop-blur border border-slate-700 shadow-xl flex items-center gap-2 sm:hidden pointer-events-none transition-opacity duration-300">
+        <div class="w-2 h-2 rounded-full bg-emerald-400" id="mobileSyncDot"></div>
+        <span id="mobileSyncText" class="text-[10px] font-bold text-white uppercase tracking-wider">Online</span>
+    </div>
 
     <!-- Form Modal (Add / Edit) -->
-    <div id="formModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4 transform scale-95 transition-transform duration-300" id="formModalContent">
+    <div id="formModal" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-end sm:items-center justify-center hidden opacity-0 transition-opacity duration-300 sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] sm:max-h-[95vh] overflow-y-auto transform translate-y-full sm:translate-y-0 sm:scale-95 transition-all duration-300 flex flex-col" id="formModalContent">
             
-            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white/95 backdrop-blur z-10">
-                <h2 class="text-xl font-bold text-slate-800" id="modalTitle">Tambah Karya Baru</h2>
-                <button onclick="closeFormModal()" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white/95 backdrop-blur z-20 no-select">
+                <h2 class="text-lg md:text-xl font-bold text-slate-800 tracking-tight" id="modalTitle">Tambah Karya</h2>
+                <button type="button" onclick="window.closeFormModal()" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition outline-none">
                     <i class="fa-solid fa-times text-lg"></i>
                 </button>
             </div>
             
-            <form id="artworkForm" class="p-6 flex flex-col gap-5">
+            <form id="artworkForm" class="p-6 flex flex-col gap-5 flex-1">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <!-- Seniman -->
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Nama Seniman <span class="text-red-500">*</span></label>
-                        <input type="text" id="inputArtist" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Nama Seniman <span class="text-red-500">*</span></label>
+                        <input type="text" id="inputArtist" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm bg-slate-50 focus:bg-white placeholder-slate-400" placeholder="Contoh: Affandi">
                     </div>
-                    <!-- Judul -->
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Judul Karya <span class="text-red-500">*</span></label>
-                        <input type="text" id="inputTitle" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Judul Karya <span class="text-red-500">*</span></label>
+                        <input type="text" id="inputTitle" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-sm bg-slate-50 focus:bg-white placeholder-slate-400" placeholder="Contoh: Kebun Cengkeh">
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    <!-- Kategori -->
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Kategori <span class="text-red-500">*</span></label>
-                        <select id="inputCategory" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white">
-                            <option value="Lukisan">Lukisan</option>
-                            <option value="Patung">Patung</option>
-                            <option value="Instalasi">Instalasi</option>
-                            <option value="Video Art">Video Art</option>
-                            <option value="Fotografi">Fotografi</option>
-                            <option value="Media Campuran">Media Campuran</option>
-                            <option value="Lainnya">Lainnya</option>
-                        </select>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-5">
+                    <div class="col-span-2 md:col-span-1">
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Kategori <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <select id="inputCategory" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white text-sm appearance-none">
+                                <option value="Lukisan">Lukisan</option>
+                                <option value="Patung">Patung</option>
+                                <option value="Instalasi">Instalasi</option>
+                                <option value="Video Art">Video Art</option>
+                                <option value="Fotografi">Fotografi</option>
+                                <option value="Media Campuran">Media Campuran</option>
+                                <option value="Lainnya">Lainnya</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none text-xs"></i>
+                        </div>
                     </div>
-                    <!-- Jumlah -->
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Jumlah Item <span class="text-red-500">*</span></label>
-                        <input type="number" id="inputQuantity" min="1" value="1" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Jumlah <span class="text-red-500">*</span></label>
+                        <input type="number" id="inputQuantity" min="1" value="1" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition text-sm bg-slate-50 focus:bg-white">
                     </div>
-                    <!-- Dimensi -->
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Dimensi/Ukuran</label>
-                        <input type="text" id="inputDimensions" placeholder="P x L x T (cm)" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Dimensi</label>
+                        <input type="text" id="inputDimensions" placeholder="P x L x T" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition text-sm bg-slate-50 focus:bg-white placeholder-slate-400">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <!-- Kondisi -->
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Kondisi Fisik <span class="text-red-500">*</span></label>
-                        <select id="inputCondition" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white">
-                            <option value="Sangat Baik">Sangat Baik</option>
-                            <option value="Baik">Baik</option>
-                            <option value="Perlu Perbaikan">Perlu Perbaikan</option>
-                            <option value="Rusak">Rusak</option>
-                        </select>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Kondisi Fisik <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <select id="inputCondition" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white text-sm appearance-none">
+                                <option value="Sangat Baik">Sangat Baik</option>
+                                <option value="Baik">Baik</option>
+                                <option value="Perlu Perbaikan">Perlu Perbaikan</option>
+                                <option value="Rusak">Rusak</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none text-xs"></i>
+                        </div>
                     </div>
-                    <!-- Status -->
                     <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-1">Status Logistik <span class="text-red-500">*</span></label>
-                        <select id="inputStatus" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white">
-                            <option value="Menunggu">Menunggu kedatangan</option>
-                            <option value="Diterima">Sudah Diterima</option>
-                            <option value="Diinstalasi">Sedang/Sudah Diinstalasi</option>
-                            <option value="Dikembalikan">Dikembalikan</option>
-                        </select>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Status Logistik <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <select id="inputStatus" required class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition bg-slate-50 focus:bg-white text-sm appearance-none">
+                                <option value="Menunggu">Menunggu Kedatangan</option>
+                                <option value="Diterima">Sudah Diterima</option>
+                                <option value="Diinstalasi">Sedang/Selesai Diinstalasi</option>
+                                <option value="Dikembalikan">Dikembalikan ke Seniman</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 pointer-events-none text-xs"></i>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Foto Karya -->
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Foto Karya (Utuh)</label>
-                    <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 border-dashed rounded-lg hover:border-blue-500 transition relative overflow-hidden group" id="dropZone">
-                        <div class="space-y-1 text-center" id="uploadPlaceholder">
-                            <i class="fa-regular fa-image text-4xl text-slate-400 mb-2"></i>
-                            <div class="flex text-sm text-slate-600 justify-center">
-                                <label for="inputImage" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                                    <span>Pilih gambar</span>
-                                    <input id="inputImage" type="file" accept="image/*" class="sr-only">
-                                </label>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Foto Karya</label>
+                    <div class="mt-1 flex justify-center px-4 py-8 border-2 border-slate-300 border-dashed rounded-2xl hover:border-blue-500 transition-colors relative overflow-hidden group bg-slate-50 cursor-pointer" id="dropZone" onclick="document.getElementById('inputImage').click()">
+                        <div class="space-y-2 text-center pointer-events-none transition-opacity" id="uploadPlaceholder">
+                            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <i class="fa-solid fa-camera text-xl"></i>
                             </div>
-                            <p class="text-xs text-slate-500">PNG, JPG hingga 5MB (Otomatis dikompres)</p>
+                            <div class="flex text-sm text-slate-600 justify-center">
+                                <span class="relative rounded-md font-bold text-blue-600">
+                                    Ketuk untuk Pilih Foto
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-500 px-4">Dioptimalkan ukurannya secara otomatis</p>
                         </div>
-                        <!-- Preview Image in form -->
-                        <img id="formImagePreview" class="absolute inset-0 w-full h-full object-contain hidden bg-slate-100" />
-                        <button type="button" id="removeImgBtn" class="absolute top-2 right-2 bg-red-500 text-white w-8 h-8 rounded-full hidden flex items-center justify-center shadow hover:bg-red-600 z-10">
-                            <i class="fa-solid fa-trash text-sm"></i>
+                        <input id="inputImage" type="file" accept="image/*" class="sr-only">
+                        <!-- Preview Image -->
+                        <img id="formImagePreview" class="absolute inset-0 w-full h-full object-contain hidden bg-slate-900/5 backdrop-blur-sm" alt="Preview"/>
+                        <button type="button" id="removeImgBtn" class="absolute top-3 right-3 bg-red-500 text-white w-9 h-9 rounded-full hidden flex items-center justify-center shadow-lg hover:bg-red-600 z-10 transition-transform active:scale-90 outline-none border-2 border-white">
+                            <i class="fa-solid fa-trash text-sm pointer-events-none"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- Keterangan Tambahan -->
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Catatan Tambahan</label>
-                    <textarea id="inputNotes" rows="2" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-none"></textarea>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Catatan Tambahan</label>
+                    <textarea id="inputNotes" rows="2" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition resize-none text-sm bg-slate-50 focus:bg-white placeholder-slate-400" placeholder="Kondisi bingkai, instruksi khusus, dll..."></textarea>
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="mt-4 flex gap-3 justify-end pt-4 border-t border-slate-100">
-                    <button type="button" onclick="closeFormModal()" class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition">Batal</button>
-                    <button type="submit" id="saveBtn" class="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-sm flex items-center gap-2">
-                        <i class="fa-solid fa-save"></i> Simpan Data
+                <div class="mt-2 flex gap-3 justify-end pt-5 border-t border-slate-100 pb-4 sm:pb-0">
+                    <button type="button" onclick="window.closeFormModal()" class="px-5 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 active:bg-slate-300 transition w-full sm:w-auto outline-none">Batal</button>
+                    <button type="submit" id="saveBtn" class="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 active:bg-blue-800 transition shadow-md shadow-blue-500/30 flex items-center justify-center gap-2 w-full sm:w-auto outline-none">
+                        <i class="fa-solid fa-save"></i> Simpan
                     </button>
                 </div>
             </form>
@@ -296,180 +334,140 @@
     </div>
 
     <!-- Image Zoom Fullscreen Modal -->
-    <div id="zoomModal" class="fixed inset-0 z-[60] bg-black/95 backdrop-blur-sm hidden flex-col transition-opacity duration-300 opacity-0">
+    <div id="zoomModal" class="fixed inset-0 z-[60] bg-black/95 backdrop-blur-md hidden flex-col transition-opacity duration-300 opacity-0 no-select">
         <!-- Top Toolbar -->
-        <div class="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/80 to-transparent">
-            <div class="text-white">
-                <h3 id="zoomTitle" class="font-semibold text-lg drop-shadow-md">Judul Karya</h3>
-                <p id="zoomArtist" class="text-sm text-slate-300 drop-shadow-md">Nama Seniman</p>
+        <div class="absolute top-0 left-0 right-0 p-4 flex justify-between items-start z-10 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+            <div class="text-white pointer-events-auto pr-10">
+                <h3 id="zoomTitle" class="font-bold text-base md:text-lg drop-shadow-md truncate max-w-[70vw]">Judul</h3>
+                <p id="zoomArtist" class="text-xs md:text-sm text-slate-300 drop-shadow-md truncate max-w-[70vw]">Seniman</p>
             </div>
-            <button onclick="closeZoomModal()" class="w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition backdrop-blur">
+            <button onclick="window.closeZoomModal()" class="w-10 h-10 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white rounded-full flex items-center justify-center transition backdrop-blur pointer-events-auto shrink-0 outline-none border border-white/10">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
         </div>
 
-        <!-- Image Container for Pan & Zoom -->
+        <!-- Image Container -->
         <div class="flex-1 overflow-hidden relative flex items-center justify-center" id="zoomContainerWrapper">
             <img id="zoom-image-container" src="" alt="Zoomed Artwork" draggable="false" class="max-w-none shadow-2xl">
         </div>
 
         <!-- Bottom Controls -->
-        <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-slate-900/80 backdrop-blur border border-slate-700 p-2 rounded-full shadow-2xl z-10">
-            <button onclick="handleZoomOut()" class="w-10 h-10 rounded-full hover:bg-slate-700 text-white flex items-center justify-center transition" title="Zoom Out">
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-slate-900/80 backdrop-blur-md border border-slate-700/50 p-1.5 rounded-full shadow-2xl z-10 pointer-events-auto">
+            <button onclick="window.handleZoomOut()" class="w-10 h-10 rounded-full hover:bg-slate-700 active:bg-slate-600 text-white flex items-center justify-center transition outline-none">
                 <i class="fa-solid fa-minus"></i>
             </button>
-            <div class="px-3 text-white font-medium text-sm w-16 text-center" id="zoomLevelIndicator">100%</div>
-            <button onclick="handleZoomIn()" class="w-10 h-10 rounded-full hover:bg-slate-700 text-white flex items-center justify-center transition" title="Zoom In">
+            <div class="px-2 text-white font-bold text-xs md:text-sm w-12 md:w-16 text-center tabular-nums" id="zoomLevelIndicator">100%</div>
+            <button onclick="window.handleZoomIn()" class="w-10 h-10 rounded-full hover:bg-slate-700 active:bg-slate-600 text-white flex items-center justify-center transition outline-none">
                 <i class="fa-solid fa-plus"></i>
             </button>
             <div class="w-px h-6 bg-slate-600 mx-1"></div>
-            <button onclick="resetZoom()" class="w-10 h-10 rounded-full hover:bg-slate-700 text-white flex items-center justify-center transition" title="Reset Zoom">
+            <button onclick="window.resetZoom()" class="w-10 h-10 rounded-full hover:bg-slate-700 active:bg-slate-600 text-white flex items-center justify-center transition outline-none">
                 <i class="fa-solid fa-expand"></i>
             </button>
         </div>
     </div>
 
-    <!-- Toast Notification Container -->
-    <div id="toastContainer" class="fixed bottom-4 right-4 z-[70] flex flex-col gap-2"></div>
+    <!-- Toast & Confirm Modals Container -->
+    <div id="toastContainer" class="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:bottom-6 md:w-96 z-[70] flex flex-col gap-2 items-center md:items-end pointer-events-none"></div>
 
-    <!-- Logika Aplikasi -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Variabel Global
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'jb-checklist-2026';
-        let firebaseConfig;
-        try {
-            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        } catch(e) { console.error("Firebase config parsing error", e); }
-        const customToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        let db, auth, currentUser;
+    <!-- Script Inti Aplikasi: Vanilla JS dipisah agar tetap berjalan jika CDN Firebase diblokir/offline -->
+    <script>
+        // State UI & Data Global
         let artworksData = [];
         let currentEditId = null;
-        let base64Image = null; // Menyimpan gambar yang diupload
-        
-        // Setup Firebase atau In-Memory Fallback
-        if (firebaseConfig) {
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-            initAuth();
-        } else {
-            showToast("Berjalan dalam mode Offline (Penyimpanan Sementara)", "warning");
-            document.getElementById('loadingState').classList.add('hidden');
-            document.getElementById('emptyState').classList.remove('hidden');
-        }
+        let base64Image = null; 
+        let isOnline = navigator.onLine;
 
-        async function initAuth() {
-            try {
-                if (customToken) {
-                    await signInWithCustomToken(auth, customToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                currentUser = auth.currentUser;
-                setupRealtimeListener();
-            } catch (error) {
-                console.error("Gagal Autentikasi:", error);
-                showToast("Gagal terhubung ke server", "error");
-            }
-        }
+        // --- SISTEM LOCAL DATABASE (IndexedDB) KEBAl ---
+        // Digunakan sebagai cadangan mutlak jika Firebase gagal memuat atau pengguna benar-benar offline
+        const DB_NAME = 'JBKebalDatabase';
+        const STORE_NAME = 'artworks_store';
+        const DB_VERSION = 1;
 
-        function setupRealtimeListener() {
-            if (!currentUser) return;
-            
-            const artworksRef = collection(db, 'artifacts', appId, 'public', 'data', 'artworks');
-            const q = query(artworksRef);
-
-            onSnapshot(q, (snapshot) => {
-                artworksData = [];
-                snapshot.forEach((doc) => {
-                    artworksData.push({ id: doc.id, ...doc.data() });
-                });
-                renderArtworks();
-                updateStats();
-                document.getElementById('loadingState').classList.add('hidden');
-            }, (error) => {
-                console.error("Gagal mendengarkan data:", error);
-                showToast("Gagal memuat data. Coba lagi nanti.", "error");
-                document.getElementById('loadingState').classList.add('hidden');
-            });
-        }
-
-        // Menangani input file gambar
-        const imgInput = document.getElementById('inputImage');
-        const formImgPreview = document.getElementById('formImagePreview');
-        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
-        const removeImgBtn = document.getElementById('removeImgBtn');
-
-        imgInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                compressImage(file, 800, 800, 0.6).then(base64 => {
-                    base64Image = base64;
-                    showImagePreview(base64);
-                });
-            }
-        });
-
-        function showImagePreview(src) {
-            formImgPreview.src = src;
-            formImgPreview.classList.remove('hidden');
-            uploadPlaceholder.classList.add('hidden');
-            removeImgBtn.classList.remove('hidden');
-        }
-
-        function clearImagePreview() {
-            base64Image = null;
-            imgInput.value = '';
-            formImgPreview.src = '';
-            formImgPreview.classList.add('hidden');
-            uploadPlaceholder.classList.remove('hidden');
-            removeImgBtn.classList.add('hidden');
-        }
-
-        removeImgBtn.addEventListener('click', clearImagePreview);
-
-        // Fungsi Kompresi Gambar menggunakan Canvas
-        function compressImage(file, maxWidth, maxHeight, quality) {
+        function openLocalDB() {
             return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = event => {
-                    const img = new Image();
-                    img.src = event.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-
-                        if (width > height) {
-                            if (width > maxWidth) {
-                                height = Math.round(height *= maxWidth / width);
-                                width = maxWidth;
-                            }
-                        } else {
-                            if (height > maxHeight) {
-                                width = Math.round(width *= maxHeight / height);
-                                height = maxHeight;
-                            }
-                        }
-
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        // Konversi ke base64
-                        resolve(canvas.toDataURL('image/jpeg', quality));
-                    };
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    }
                 };
-                reader.onerror = error => reject(error);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
             });
         }
+
+        async function saveToLocalDB(item) {
+            try {
+                const db = await openLocalDB();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readwrite');
+                    tx.objectStore(STORE_NAME).put(item);
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject(tx.error);
+                });
+            } catch(e) { console.warn("LocalDB Save Error:", e); }
+        }
+
+        async function loadFromLocalDB() {
+            try {
+                const db = await openLocalDB();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readonly');
+                    const request = tx.objectStore(STORE_NAME).getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            } catch(e) { 
+                console.warn("LocalDB Load Error:", e); 
+                return []; 
+            }
+        }
+
+        async function deleteFromLocalDB(id) {
+            try {
+                const db = await openLocalDB();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readwrite');
+                    tx.objectStore(STORE_NAME).delete(id);
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject(tx.error);
+                });
+            } catch(e) { console.warn("LocalDB Delete Error:", e); }
+        }
+
+        // --- FUNGSI UI / UX KUSTOM ---
+        function updateSyncStatusUI(status, isOffline = false) {
+            const dtText = document.getElementById('syncText');
+            const dtDot = document.getElementById('syncDot');
+            const mbText = document.getElementById('mobileSyncText');
+            const mbDot = document.getElementById('mobileSyncDot');
+            
+            if (isOffline) {
+                dtText.textContent = "Offline (Tersimpan Lokal)";
+                dtDot.className = "w-2 h-2 rounded-full bg-amber-400";
+                mbText.textContent = "Offline";
+                mbDot.className = "w-2 h-2 rounded-full bg-amber-400";
+            } else {
+                dtText.textContent = status;
+                dtDot.className = "w-2 h-2 rounded-full bg-emerald-400";
+                mbText.textContent = "Online";
+                mbDot.className = "w-2 h-2 rounded-full bg-emerald-400";
+            }
+        }
+
+        window.addEventListener('online', () => { 
+            isOnline = true; 
+            updateSyncStatusUI("Sinkronisasi Aktif", false);
+            showToast("Kembali Online. Menyinkronkan data...", "success"); 
+        });
+        
+        window.addEventListener('offline', () => { 
+            isOnline = false; 
+            updateSyncStatusUI("Offline", true);
+            showToast("Koneksi terputus. Bekerja secara Offline (Aman).", "warning"); 
+        });
 
         // Modal Form Handling
         window.openFormModal = function(editId = null) {
@@ -484,13 +482,13 @@
                 title.textContent = "Edit Data Karya";
                 const item = artworksData.find(a => a.id === editId);
                 if (item) {
-                    document.getElementById('inputArtist').value = item.artist;
-                    document.getElementById('inputTitle').value = item.title;
-                    document.getElementById('inputCategory').value = item.category;
-                    document.getElementById('inputQuantity').value = item.quantity;
+                    document.getElementById('inputArtist').value = item.artist || '';
+                    document.getElementById('inputTitle').value = item.title || '';
+                    document.getElementById('inputCategory').value = item.category || 'Lainnya';
+                    document.getElementById('inputQuantity').value = item.quantity || 1;
                     document.getElementById('inputDimensions').value = item.dimensions || '';
-                    document.getElementById('inputCondition').value = item.condition;
-                    document.getElementById('inputStatus').value = item.status;
+                    document.getElementById('inputCondition').value = item.condition || 'Baik';
+                    document.getElementById('inputStatus').value = item.status || 'Menunggu';
                     document.getElementById('inputNotes').value = item.notes || '';
                     
                     if (item.image) {
@@ -507,108 +505,166 @@
             modal.classList.remove('hidden');
             setTimeout(() => {
                 modal.classList.remove('opacity-0');
-                document.getElementById('formModalContent').classList.remove('scale-95');
+                // animasi slide up untuk mobile, scale down untuk desktop
+                const content = document.getElementById('formModalContent');
+                if (window.innerWidth < 640) {
+                    content.classList.remove('translate-y-full');
+                } else {
+                    content.classList.remove('scale-95');
+                }
             }, 10);
-        }
+            document.body.style.overflow = 'hidden'; // Kunci scroll di background
+        };
 
         window.closeFormModal = function() {
             const modal = document.getElementById('formModal');
-            modal.classList.add('opacity-0');
-            document.getElementById('formModalContent').classList.add('scale-95');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
-        }
-
-        // Menyimpan Data
-        document.getElementById('artworkForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+            const content = document.getElementById('formModalContent');
             
-            if (!currentUser && db) {
-                showToast("Menunggu koneksi. Coba sebentar lagi.", "error");
-                return;
+            modal.classList.add('opacity-0');
+            if (window.innerWidth < 640) {
+                content.classList.add('translate-y-full');
+            } else {
+                content.classList.add('scale-95');
             }
+            
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+            document.body.style.overflow = 'auto'; // Buka scroll
+        };
 
-            const btn = document.getElementById('saveBtn');
-            const btnOriginalHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
-            btn.disabled = true;
+        // --- SISTEM PEMROSESAN GAMBAR (KOMPRESI LOKAL) ---
+        // Penting untuk memastikan payload kecil dan masuk di limit LocalStorage/IndexedDB
+        const imgInput = document.getElementById('inputImage');
+        const formImgPreview = document.getElementById('formImagePreview');
+        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+        const removeImgBtn = document.getElementById('removeImgBtn');
 
-            const newArtwork = {
-                artist: document.getElementById('inputArtist').value.trim(),
-                title: document.getElementById('inputTitle').value.trim(),
-                category: document.getElementById('inputCategory').value,
-                quantity: parseInt(document.getElementById('inputQuantity').value) || 1,
-                dimensions: document.getElementById('inputDimensions').value.trim(),
-                condition: document.getElementById('inputCondition').value,
-                status: document.getElementById('inputStatus').value,
-                notes: document.getElementById('inputNotes').value.trim(),
-                image: base64Image,
-                updatedAt: new Date().toISOString()
-            };
-
-            try {
-                if (db) {
-                    const idToSave = currentEditId || crypto.randomUUID();
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'artworks', idToSave);
-                    
-                    if (!currentEditId) {
-                        newArtwork.createdAt = new Date().toISOString();
-                    }
-                    
-                    await setDoc(docRef, newArtwork, { merge: true });
-                    showToast(currentEditId ? "Data diperbarui" : "Karya baru ditambahkan", "success");
-                } else {
-                    // Fallback In-memory (if db is somehow null)
-                    if (currentEditId) {
-                        const idx = artworksData.findIndex(a => a.id === currentEditId);
-                        if(idx > -1) artworksData[idx] = { ...artworksData[idx], ...newArtwork };
-                    } else {
-                        newArtwork.id = crypto.randomUUID();
-                        artworksData.push(newArtwork);
-                    }
-                    renderArtworks();
-                    updateStats();
-                }
-                closeFormModal();
-            } catch (error) {
-                console.error("Gagal menyimpan:", error);
-                showToast("Terjadi kesalahan saat menyimpan", "error");
-            } finally {
-                btn.innerHTML = btnOriginalHtml;
-                btn.disabled = false;
+        imgInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Kompresi ketat: Maks 800px, Kualitas JPEG 0.6 agar ukuran base64 di bawah 200kb
+                compressImage(file, 800, 800, 0.6).then(base64 => {
+                    base64Image = base64;
+                    showImagePreview(base64);
+                }).catch(err => {
+                    showToast("Gagal memproses foto", "error");
+                    console.error("Compression error:", err);
+                });
             }
         });
 
-        // Menghapus Data
-        window.deleteArtwork = async function(id) {
-            // Kita implementasi modal konfirmasi custom nanti, sementara kita asumsikan Ya jika dipanggil (berdasar aturan dilarang confirm, kita pakai form toast konfirmasi kustom)
-            // Karena tidak ada modal confirm yang dirancang dalam snippet ini, kita langsung hapus atau buat logic custom confirm
-            const artwork = artworksData.find(a => a.id === id);
-            if (!artwork) return;
-
-            // Membuat Custom Confirm UI sederhana via Toast khusus
-            createCustomConfirm(
-                `Hapus karya "${artwork.title}"?`,
-                async () => {
-                    if(db && currentUser) {
-                        try {
-                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'artworks', id));
-                            showToast("Karya berhasil dihapus", "success");
-                        } catch (e) {
-                            showToast("Gagal menghapus", "error");
-                        }
-                    } else {
-                        artworksData = artworksData.filter(a => a.id !== id);
-                        renderArtworks();
-                        updateStats();
-                        showToast("Karya dihapus lokal", "success");
-                    }
-                }
-            );
+        function showImagePreview(src) {
+            formImgPreview.src = src;
+            formImgPreview.classList.remove('hidden');
+            uploadPlaceholder.classList.add('opacity-0');
+            removeImgBtn.classList.remove('hidden');
         }
 
-        // Render & Filter Logic
+        function clearImagePreview() {
+            base64Image = null;
+            imgInput.value = '';
+            formImgPreview.src = '';
+            formImgPreview.classList.add('hidden');
+            uploadPlaceholder.classList.remove('opacity-0');
+            removeImgBtn.classList.add('hidden');
+        }
+
+        removeImgBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            clearImagePreview();
+        });
+
+        function compressImage(file, maxWidth, maxHeight, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = event => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > maxWidth) { height = Math.round(height *= maxWidth / width); width = maxWidth; }
+                        } else {
+                            if (height > maxHeight) { width = Math.round(width *= maxHeight / height); height = maxHeight; }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.onerror = error => reject(error);
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // --- SISTEM TOAST DAN CONFIRM (ANTI-NATIVE BLOCK) ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            let color = 'bg-slate-800 text-white';
+            let icon = 'fa-info-circle text-blue-400';
+            if (type === 'success') { color = 'bg-slate-800 text-white'; icon = 'fa-check-circle text-emerald-400'; }
+            else if (type === 'error') { color = 'bg-red-600 text-white'; icon = 'fa-exclamation-triangle text-white'; }
+            else if (type === 'warning') { color = 'bg-amber-50 text-amber-900 border border-amber-200'; icon = 'fa-exclamation-circle text-amber-600'; }
+
+            toast.className = `${color} px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 transform translate-y-12 opacity-0 transition-all duration-400 font-semibold text-sm w-full md:w-auto pointer-events-auto shadow-black/10`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-lg shrink-0"></i> <span class="flex-1">${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            // Animasi Masuk
+            requestAnimationFrame(() => {
+                setTimeout(() => toast.classList.remove('translate-y-12', 'opacity-0'), 10);
+            });
+
+            // Animasi Keluar
+            setTimeout(() => {
+                toast.classList.add('translate-y-12', 'opacity-0');
+                setTimeout(() => toast.remove(), 400);
+            }, 3500);
+        }
+
+        function createCustomConfirm(message, onConfirm) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            toast.className = `bg-white px-5 py-5 rounded-2xl shadow-2xl flex flex-col gap-4 transform translate-y-12 opacity-0 transition-all duration-300 border border-slate-200 pointer-events-auto w-full md:w-[360px]`;
+            toast.innerHTML = `
+                <div class="flex items-start gap-4">
+                    <div class="w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-800 mb-1 text-base">Hapus Data</h4>
+                        <p class="text-sm text-slate-500 leading-snug">${message}</p>
+                    </div>
+                </div>
+                <div class="flex gap-2 justify-end mt-2">
+                    <button class="cancel-btn px-4 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-xl transition outline-none">Batal</button>
+                    <button class="confirm-btn px-4 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 rounded-xl transition outline-none shadow-md shadow-red-500/30">Ya, Hapus</button>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            requestAnimationFrame(() => { setTimeout(() => toast.classList.remove('translate-y-12', 'opacity-0'), 10); });
+
+            const removeToast = () => {
+                toast.classList.add('translate-y-12', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            };
+
+            toast.querySelector('.cancel-btn').onclick = removeToast;
+            toast.querySelector('.confirm-btn').onclick = () => { onConfirm(); removeToast(); };
+        }
+
+        // --- MANAJEMEN RENDERING DATA ---
         function renderArtworks() {
             const grid = document.getElementById('artworkGrid');
             const emptyState = document.getElementById('emptyState');
@@ -619,7 +675,10 @@
 
             grid.innerHTML = '';
             
-            let filtered = artworksData.filter(item => {
+            // Urutkan berdasarkan waktu pembaruan (terbaru di atas)
+            const sortedData = [...artworksData].sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+
+            let filtered = sortedData.filter(item => {
                 const matchSearch = item.title.toLowerCase().includes(searchTerm) || item.artist.toLowerCase().includes(searchTerm);
                 const matchCat = filterCat === "" || item.category === filterCat;
                 const matchStat = filterStat === "" || item.status === filterStat;
@@ -628,105 +687,100 @@
 
             if (filtered.length === 0) {
                 grid.classList.add('hidden');
-                emptyState.classList.remove('hidden');
+                emptyState.classList.remove('hidden', 'flex');
+                emptyState.classList.add('flex'); // gunakan flex
             } else {
                 emptyState.classList.add('hidden');
+                emptyState.classList.remove('flex');
                 grid.classList.remove('hidden');
                 
-                filtered.forEach(item => {
-                    grid.appendChild(createCardElement(item));
-                });
+                filtered.forEach(item => { grid.appendChild(createCardElement(item)); });
             }
         }
 
-        // Event Listener untuk Search & Filter
         document.getElementById('searchInput').addEventListener('input', renderArtworks);
         document.getElementById('filterCategory').addEventListener('change', renderArtworks);
         document.getElementById('filterStatus').addEventListener('change', renderArtworks);
 
-        // Helper untuk UI Kartu
         function getConditionColor(condition) {
             switch(condition) {
-                case 'Sangat Baik': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-                case 'Baik': return 'bg-blue-100 text-blue-700 border-blue-200';
-                case 'Perlu Perbaikan': return 'bg-amber-100 text-amber-700 border-amber-200';
-                case 'Rusak': return 'bg-red-100 text-red-700 border-red-200';
-                default: return 'bg-slate-100 text-slate-700 border-slate-200';
+                case 'Sangat Baik': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                case 'Baik': return 'bg-blue-50 text-blue-700 border-blue-200';
+                case 'Perlu Perbaikan': return 'bg-amber-50 text-amber-700 border-amber-200';
+                case 'Rusak': return 'bg-red-50 text-red-700 border-red-200';
+                default: return 'bg-slate-50 text-slate-700 border-slate-200';
             }
         }
 
         function getStatusColor(status) {
             switch(status) {
-                case 'Menunggu': return 'bg-slate-100 text-slate-600';
-                case 'Diterima': return 'bg-emerald-500 text-white shadow-emerald-200';
-                case 'Diinstalasi': return 'bg-blue-500 text-white shadow-blue-200';
-                case 'Dikembalikan': return 'bg-purple-500 text-white shadow-purple-200';
-                default: return 'bg-slate-200 text-slate-800';
+                case 'Menunggu': return 'bg-slate-200 text-slate-700 border-slate-300';
+                case 'Diterima': return 'bg-emerald-500 text-white border-emerald-600 shadow-md shadow-emerald-500/30';
+                case 'Diinstalasi': return 'bg-blue-600 text-white border-blue-700 shadow-md shadow-blue-500/30';
+                case 'Dikembalikan': return 'bg-purple-500 text-white border-purple-600 shadow-md shadow-purple-500/30';
+                default: return 'bg-slate-200 text-slate-800 border-slate-300';
             }
         }
 
         function createCardElement(item) {
             const div = document.createElement('div');
-            div.className = "bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col group transition hover:shadow-md";
+            div.className = "bg-white rounded-2xl shadow-sm hover:shadow-lg border border-slate-200/60 overflow-hidden flex flex-col group transition-all duration-300";
             
-            // Image area
+            // Area Gambar
             const imgArea = document.createElement('div');
-            imgArea.className = "h-56 w-full bg-slate-100 relative cursor-zoom-in overflow-hidden border-b border-slate-100";
+            imgArea.className = "img-container h-48 md:h-56 w-full bg-slate-100 relative overflow-hidden border-b border-slate-100 shrink-0";
             
-            const imgUrl = item.image || `https://placehold.co/600x400/f1f5f9/64748b?text=Tidak+Ada+Foto\\n${item.category}`;
+            // Fallback gambar jika kosong (menggunakan base64 ringan atau placeholder)
+            const fallbackSrc = 'data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22400%22%20height%3D%22400%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23f1f5f9%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22sans-serif%22%20font-size%3D%2220%22%20fill%3D%22%2394a3b8%22%20text-anchor%3D%22middle%22%20dy%3D%22.3em%22%3ETanpa%20Foto%3C%2Ftext%3E%3C%2Fsvg%3E';
+            const imgUrl = item.image || fallbackSrc;
             
             imgArea.innerHTML = `
-                <img src="${imgUrl}" alt="${item.title}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                <div class="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/20 transition duration-300 flex items-center justify-center">
-                    <div class="w-12 h-12 rounded-full bg-white/90 text-slate-700 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300 transform scale-75 group-hover:scale-100 shadow-lg">
-                        <i class="fa-solid fa-magnifying-glass-plus text-xl"></i>
-                    </div>
-                </div>
-                <div class="absolute top-3 right-3 ${getStatusColor(item.status)} px-3 py-1 rounded-full text-xs font-bold shadow-sm backdrop-blur-sm">
+                <img src="${imgUrl}" alt="${item.title}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute top-3 right-3 ${getStatusColor(item.status)} px-3 py-1 rounded-full text-[10px] md:text-xs font-bold border backdrop-blur-sm z-10 uppercase tracking-wide">
                     ${item.status}
                 </div>
             `;
             
-            imgArea.onclick = () => openZoomModal(imgUrl, item.title, item.artist);
-            div.appendChild(imgArea);
-
-            // Content area
-            const content = document.createElement('div');
-            content.className = "p-5 flex-1 flex flex-col";
-            content.innerHTML = `
-                <div class="flex justify-between items-start mb-2">
-                    <div>
-                        <h3 class="font-bold text-lg text-slate-800 leading-tight mb-1">${item.title}</h3>
-                        <p class="text-sm font-medium text-blue-600">${item.artist}</p>
-                    </div>
-                </div>
+            // Zoom Feature
+            if (item.image) {
+                imgArea.classList.add('cursor-zoom-in');
+                imgArea.onclick = () => window.openZoomModal(item.image, item.title, item.artist);
                 
-                <div class="mt-4 flex flex-wrap gap-2 text-xs">
-                    <span class="px-2 py-1 rounded bg-slate-100 text-slate-600 font-medium border border-slate-200 flex items-center gap-1">
+                const hoverOverlay = document.createElement('div');
+                hoverOverlay.className = "absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/10 transition-colors duration-300 flex items-center justify-center cursor-pointer pointer-events-none";
+                hoverOverlay.innerHTML = `<div class="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center text-slate-800 opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all duration-300 shadow-lg"><i class="fa-solid fa-expand"></i></div>`;
+                imgArea.appendChild(hoverOverlay);
+            }
+
+            const content = document.createElement('div');
+            content.className = "p-4 sm:p-5 flex-1 flex flex-col";
+            content.innerHTML = `
+                <h3 class="font-bold text-base md:text-lg text-slate-800 leading-tight mb-1 truncate" title="${item.title}">${item.title}</h3>
+                <p class="text-xs md:text-sm font-bold text-blue-600 truncate uppercase tracking-wide" title="${item.artist}">${item.artist}</p>
+                
+                <div class="mt-4 flex flex-wrap gap-2 text-[10px] md:text-xs font-semibold">
+                    <span class="px-2 py-1 rounded-md bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1.5">
                         <i class="fa-solid fa-layer-group opacity-60"></i> ${item.category}
                     </span>
-                    <span class="px-2 py-1 rounded border font-medium flex items-center gap-1 ${getConditionColor(item.condition)}">
+                    <span class="px-2 py-1 rounded-md border flex items-center gap-1.5 ${getConditionColor(item.condition)}">
                         <i class="fa-solid fa-heart-pulse opacity-60"></i> ${item.condition}
                     </span>
-                    <span class="px-2 py-1 rounded bg-slate-100 text-slate-600 font-medium border border-slate-200 flex items-center gap-1">
-                        <i class="fa-solid fa-cubes opacity-60"></i> Qty: ${item.quantity}
+                    <span class="px-2 py-1 rounded-md bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-box opacity-60"></i> ${item.quantity}x
                     </span>
                 </div>
-                
-                ${item.dimensions ? `<p class="text-xs text-slate-500 mt-3 flex items-center gap-1"><i class="fa-solid fa-ruler-combined opacity-60"></i> ${item.dimensions}</p>` : ''}
+                ${item.dimensions ? `<p class="text-[10px] md:text-xs text-slate-400 mt-3 flex items-center gap-1.5 font-medium"><i class="fa-solid fa-ruler-combined opacity-70"></i> ${item.dimensions}</p>` : ''}
             `;
             div.appendChild(content);
 
-            // Actions area
             const actions = document.createElement('div');
-            actions.className = "px-5 py-3 border-t border-slate-100 bg-slate-50 flex justify-between items-center no-print export-hide";
+            actions.className = "px-4 py-3 border-t border-slate-100 bg-slate-50 flex justify-between items-center no-print export-hide mt-auto";
             actions.innerHTML = `
                 <div class="flex gap-2 w-full">
-                    <button onclick="openFormModal('${item.id}')" class="flex-1 py-1.5 text-sm font-medium text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded transition flex items-center justify-center gap-2 border border-transparent hover:border-blue-100">
+                    <button onclick="window.openFormModal('${item.id}')" class="flex-1 py-2 text-xs md:text-sm font-bold text-slate-600 hover:text-blue-600 active:bg-blue-100 bg-white border border-slate-200 hover:border-blue-300 rounded-xl transition flex items-center justify-center gap-2 outline-none shadow-sm">
                         <i class="fa-solid fa-pen-to-square"></i> Edit
                     </button>
-                    <div class="w-px bg-slate-200 my-1"></div>
-                    <button onclick="deleteArtwork('${item.id}')" class="flex-1 py-1.5 text-sm font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 rounded transition flex items-center justify-center gap-2 border border-transparent hover:border-red-100">
+                    <button onclick="window.requestDeleteArtwork('${item.id}')" class="flex-1 py-2 text-xs md:text-sm font-bold text-slate-600 hover:text-red-600 active:bg-red-100 bg-white border border-slate-200 hover:border-red-300 rounded-xl transition flex items-center justify-center gap-2 outline-none shadow-sm">
                         <i class="fa-solid fa-trash-can"></i> Hapus
                     </button>
                 </div>
@@ -743,75 +797,62 @@
             document.getElementById('stat-installed').textContent = artworksData.filter(a => a.status === 'Diinstalasi').length;
         }
 
-        // Logic Zoom Image Layar Penuh
+        // --- ZOOM LOGIC (TOUCH & MOUSE Panning) ---
         const zoomModal = document.getElementById('zoomModal');
         const zoomImg = document.getElementById('zoom-image-container');
         const zoomLevelText = document.getElementById('zoomLevelIndicator');
         
-        let zScale = 1;
-        let zTranslateX = 0;
-        let zTranslateY = 0;
-        let isDragging = false;
-        let startX, startY;
-        const scaleStep = 0.25;
+        let zScale = 1; let zTranslateX = 0; let zTranslateY = 0;
+        let isDragging = false; let startX, startY; const scaleStep = 0.5;
 
         window.openZoomModal = function(src, title, artist) {
             zoomImg.src = src;
             document.getElementById('zoomTitle').textContent = title;
             document.getElementById('zoomArtist').textContent = artist;
-            
-            // Reset transform
-            resetZoomLogic();
-            
+            window.resetZoom();
             zoomModal.classList.remove('hidden');
-            setTimeout(() => { zoomModal.classList.remove('opacity-0'); }, 10);
-            document.body.style.overflow = 'hidden'; // Prevent body scroll
-        }
+            setTimeout(() => zoomModal.classList.remove('opacity-0'), 10);
+            document.body.style.overflow = 'hidden';
+        };
 
         window.closeZoomModal = function() {
             zoomModal.classList.add('opacity-0');
-            setTimeout(() => { 
-                zoomModal.classList.add('hidden'); 
-                zoomImg.src = '';
-            }, 300);
+            setTimeout(() => { zoomModal.classList.add('hidden'); zoomImg.src = ''; }, 300);
             document.body.style.overflow = 'auto';
-        }
+        };
 
         function applyZoomTransform() {
             zoomImg.style.transform = `translate(${zTranslateX}px, ${zTranslateY}px) scale(${zScale})`;
             zoomLevelText.textContent = `${Math.round(zScale * 100)}%`;
         }
 
-        function resetZoomLogic() {
-            zScale = 1; zTranslateX = 0; zTranslateY = 0;
-            applyZoomTransform();
-        }
-        
-        window.resetZoom = resetZoomLogic;
+        window.resetZoom = function() { zScale = 1; zTranslateX = 0; zTranslateY = 0; applyZoomTransform(); };
+        window.handleZoomIn = function() { if (zScale < 4) { zScale += scaleStep; applyZoomTransform(); } };
+        window.handleZoomOut = function() { if (zScale > 0.5) { zScale -= scaleStep; applyZoomTransform(); } };
 
-        window.handleZoomIn = function() {
-            if (zScale < 5) { zScale += scaleStep; applyZoomTransform(); }
-        }
-
-        window.handleZoomOut = function() {
-            if (zScale > 0.5) { zScale -= scaleStep; applyZoomTransform(); }
-        }
-
-        // Mouse Wheel Zoom
-        const zoomWrapper = document.getElementById('zoomContainerWrapper');
-        zoomWrapper.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            if (e.deltaY < 0 && zScale < 5) {
-                zScale += scaleStep;
-            } else if (e.deltaY > 0 && zScale > 0.5) {
-                zScale -= scaleStep;
+        // Panning Touch Mobile
+        let touchStartX, touchStartY;
+        zoomImg.addEventListener('touchstart', (e) => {
+            if(e.touches.length === 1) {
+                isDragging = true;
+                touchStartX = e.touches[0].clientX - zTranslateX;
+                touchStartY = e.touches[0].clientY - zTranslateY;
             }
+        }, {passive: true});
+        
+        zoomImg.addEventListener('touchmove', (e) => {
+            if(!isDragging || e.touches.length !== 1) return;
+            e.preventDefault(); // cegah scroll web saat panning
+            zTranslateX = e.touches[0].clientX - touchStartX;
+            zTranslateY = e.touches[0].clientY - touchStartY;
             applyZoomTransform();
-        });
+        }, {passive: false});
 
-        // Mouse Drag / Panning
+        zoomImg.addEventListener('touchend', () => { isDragging = false; });
+        
+        // Panning Mouse Desktop
         zoomImg.addEventListener('mousedown', (e) => {
-            e.preventDefault(); // cegah drag gambar default browser
+            e.preventDefault();
             isDragging = true;
             startX = e.clientX - zTranslateX;
             startY = e.clientY - zTranslateY;
@@ -824,225 +865,300 @@
             applyZoomTransform();
         });
 
-        window.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
-
-        // Sentuhan (Touch) untuk perangkat mobile (Panning sederhana)
-        let touchStartX, touchStartY;
-        zoomImg.addEventListener('touchstart', (e) => {
-            if(e.touches.length === 1) {
-                isDragging = true;
-                touchStartX = e.touches[0].clientX - zTranslateX;
-                touchStartY = e.touches[0].clientY - zTranslateY;
-            }
-        });
+        window.addEventListener('mouseup', () => { isDragging = false; });
         
-        zoomImg.addEventListener('touchmove', (e) => {
-            if(!isDragging || e.touches.length !== 1) return;
+        // Scroll wheel to zoom
+        document.getElementById('zoomContainerWrapper').addEventListener('wheel', (e) => {
             e.preventDefault();
-            zTranslateX = e.touches[0].clientX - touchStartX;
-            zTranslateY = e.touches[0].clientY - touchStartY;
+            if (e.deltaY < 0 && zScale < 4) zScale += 0.25;
+            else if (e.deltaY > 0 && zScale > 0.5) zScale -= 0.25;
             applyZoomTransform();
-        });
+        }, {passive: false});
 
-        zoomImg.addEventListener('touchend', () => { isDragging = false; });
-
-        // Toast Notification System
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            
-            let color = 'bg-slate-800 text-white';
-            let icon = 'fa-info-circle';
-            
-            if (type === 'success') { color = 'bg-emerald-600 text-white'; icon = 'fa-check-circle'; }
-            else if (type === 'error') { color = 'bg-red-600 text-white'; icon = 'fa-exclamation-triangle'; }
-            else if (type === 'warning') { color = 'bg-amber-500 text-white'; icon = 'fa-exclamation-circle'; }
-
-            toast.className = `${color} px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 transform translate-y-10 opacity-0 transition-all duration-300 font-medium text-sm border border-black/10 max-w-sm`;
-            toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> <span>${message}</span>`;
-            
-            container.appendChild(toast);
-            
-            // Animate in
-            setTimeout(() => {
-                toast.classList.remove('translate-y-10', 'opacity-0');
-            }, 10);
-
-            // Remove after 3s
-            setTimeout(() => {
-                toast.classList.add('translate-y-10', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        // Custom Confirm via Toast (sebagai pengganti alert/confirm browser bawaan)
-        function createCustomConfirm(message, onConfirm) {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            
-            toast.className = `bg-white px-4 py-4 rounded-xl shadow-2xl flex flex-col gap-3 transform translate-y-10 opacity-0 transition-all duration-300 border border-slate-200 pointer-events-auto max-w-sm`;
-            toast.innerHTML = `
-                <div class="flex items-start gap-3">
-                    <div class="w-10 h-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center shrink-0">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-slate-800 mb-1">Konfirmasi</h4>
-                        <p class="text-sm text-slate-600">${message}</p>
-                    </div>
-                </div>
-                <div class="flex gap-2 justify-end mt-2">
-                    <button class="cancel-btn px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">Batal</button>
-                    <button class="confirm-btn px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition">Ya, Hapus</button>
-                </div>
-            `;
-            
-            container.appendChild(toast);
-            
-            setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 10);
-
-            const removeToast = () => {
-                toast.classList.add('translate-y-10', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            };
-
-            toast.querySelector('.cancel-btn').onclick = removeToast;
-            toast.querySelector('.confirm-btn').onclick = () => {
-                onConfirm();
-                removeToast();
-            };
-        }
-
-        window.exportPrint = function() {
-            window.print();
-        };
+        // Tampilan Ekspor (Eksport Library menggunakan CDN)
+        window.exportPrint = function() { window.print(); };
 
         window.exportJPG = async function() {
-            if (artworksData.length === 0) {
-                showToast("Tidak ada data untuk diekspor", "warning");
-                return;
+            if (artworksData.length === 0) return showToast("Brankas kosong, tidak ada yang diekspor", "warning");
+            if (typeof html2canvas === 'undefined') {
+                // Load dinamis jika belum ada (berguna jika offline lalu online)
+                try {
+                    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+                } catch(e) { return showToast("Fitur ekspor foto butuh internet pertama kali", "error"); }
             }
             
-            showToast("Menyiapkan gambar. Mohon tunggu...", "info");
-            
-            // Menyembunyikan elemen UI (seperti form pencarian dan tombol aksi) dari JPG
+            showToast("Memotret laporan...", "info");
             const elementsToHide = document.querySelectorAll('.export-hide, #controls-area');
             elementsToHide.forEach(el => el.style.display = 'none');
             
-            // Menargetkan wrapper 'export-container' agar mencakup Header Jakarta Biennale
-            const elementToCapture = document.getElementById('export-container');
-            
             try {
-                const canvas = await html2canvas(elementToCapture, {
-                    scale: 2, // Resolusi tinggi agar teks tidak pecah
-                    useCORS: true, 
-                    backgroundColor: '#f8fafc' // Samakan dengan background aplikasi
+                const canvas = await html2canvas(document.getElementById('export-container'), {
+                    scale: 2, useCORS: true, backgroundColor: '#f8fafc', logging: false
                 });
-                
                 const link = document.createElement('a');
-                link.download = 'Jakarta_Biennale_2026_Checklist.jpg';
-                link.href = canvas.toDataURL('image/jpeg', 0.9);
+                link.download = `Checklist_JB_2026_${Date.now()}.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.85);
                 link.click();
-                
-                showToast("Berhasil mengekspor layout menjadi JPG", "success");
-            } catch (err) {
-                console.error("Gagal export JPG:", err);
-                showToast("Terjadi kesalahan saat mengekspor gambar", "error");
-            } finally {
-                // Mengembalikan tampilan elemen UI yang disembunyikan
-                elementsToHide.forEach(el => el.style.display = '');
-            }
+                showToast("Berhasil menyimpan gambar JPG", "success");
+            } catch (err) { showToast("Sistem gagal merender gambar", "error"); }
+            finally { elementsToHide.forEach(el => el.style.display = ''); }
         };
 
         window.exportExcel = function() {
-            if (artworksData.length === 0) {
-                showToast("Tidak ada data untuk diekspor", "warning");
-                return;
-            }
+            if (artworksData.length === 0) return showToast("Brankas kosong, tidak ada yang diekspor", "warning");
+            showToast("Menyusun laporan Excel...", "info");
             
-            showToast("Menyiapkan file Excel beserta gambar...", "info");
-            
-            // Membuat template HTML table untuk diekspor sebagai .xls
-            // Ini memungkinkan base64 image dan warna UI dirender oleh Excel
-            let tableHtml = `
-            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-            <head>
-                <meta charset="utf-8">
-                <style>
-                    table { border-collapse: collapse; width: 100%; font-family: sans-serif; }
-                    th { background-color: #0f172a; color: #ffffff; padding: 12px; font-size: 14px; text-align: left; border: 1px solid #cbd5e1; }
-                    td { padding: 10px; border: 1px solid #cbd5e1; vertical-align: top; font-size: 13px; color: #334155; }
-                    .img-cell { width: 140px; text-align: center; vertical-align: middle; }
-                    img { max-width: 120px; max-height: 120px; object-fit: cover; border-radius: 4px; }
-                    h2 { color: #0f172a; margin-bottom: 5px; }
-                    h4 { color: #3b82f6; margin-top: 0; margin-bottom: 20px; font-style: italic; }
-                </style>
-            </head>
-            <body>
-                <h2>Jakarta Biennale 2026</h2>
-                <h4>'KEBAL' - Checklist Karya Seniman</h4>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>Foto Karya</th>
-                            <th>Seniman & Judul</th>
-                            <th>Detail (Kategori, Qty, Dimensi)</th>
-                            <th>Kondisi Fisik</th>
-                            <th>Status Logistik</th>
-                            <th>Catatan Tambahan</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            artworksData.forEach((item, index) => {
-                const imgTag = item.image ? `<img src="${item.image}">` : '<i>Tidak ada foto</i>';
-                
-                tableHtml += `
-                    <tr>
-                        <td style="text-align: center; vertical-align: middle;">${index + 1}</td>
-                        <td class="img-cell">${imgTag}</td>
-                        <td>
-                            <strong style="font-size: 15px; color: #0f172a;">${item.title}</strong><br>
-                            <span style="color: #3b82f6;">${item.artist}</span>
-                        </td>
-                        <td>
-                            Kategori: <strong>${item.category}</strong><br>
-                            Jumlah: ${item.quantity}<br>
-                            Dimensi: ${item.dimensions || '-'}
-                        </td>
-                        <td>${item.condition}</td>
-                        <td>${item.status}</td>
-                        <td>${item.notes || '-'}</td>
-                    </tr>
-                `;
-            });
-
-            tableHtml += `
-                    </tbody>
-                </table>
-            </body>
-            </html>
-            `;
-
             try {
+                let tableHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>table { border-collapse: collapse; width: 100%; font-family: sans-serif; } th { background-color: #0f172a; color: #ffffff; padding: 12px; font-size: 13px; text-align: left; border: 1px solid #cbd5e1; } td { padding: 12px; border: 1px solid #cbd5e1; vertical-align: middle; font-size: 13px; color: #334155; } img { max-width: 100px; max-height: 100px; object-fit: cover; border-radius: 4px; } h2 { color: #0f172a; margin-bottom: 2px; } h4 { color: #3b82f6; margin-top: 0; margin-bottom: 20px; font-style: italic; }</style></head><body><h2>Jakarta Biennale 2026</h2><h4>'KEBAL' - Checklist Logistik Karya</h4><table><thead><tr><th>No</th><th>Foto</th><th>Seniman & Judul</th><th>Detail Karya</th><th>Fisik</th><th>Status</th><th>Catatan</th></tr></thead><tbody>`;
+
+                [...artworksData].sort((a, b) => new Date(b.updatedAt||0) - new Date(a.updatedAt||0)).forEach((item, index) => {
+                    const imgTag = item.image ? `<img src="${item.image}">` : '<i>Tanpa Foto</i>';
+                    tableHtml += `<tr><td style="text-align:center;">${index + 1}</td><td style="text-align:center;">${imgTag}</td><td><strong style="font-size:14px;color:#0f172a;">${item.title}</strong><br><span style="color:#3b82f6;">${item.artist}</span></td><td>Kategori: <strong>${item.category}</strong><br>Qty: ${item.quantity}<br>Ukuran: ${item.dimensions || '-'}</td><td>${item.condition}</td><td><strong>${item.status}</strong></td><td>${item.notes || '-'}</td></tr>`;
+                });
+                tableHtml += `</tbody></table></body></html>`;
+
                 const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = 'Checklist_JB_2026_dengan_Foto.xls';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                showToast("Berhasil mengekspor ke dokumen Excel", "success");
-            } catch (err) {
-                console.error("Gagal export Excel:", err);
-                showToast("Terjadi kesalahan saat mengekspor Excel", "error");
-            }
+                link.download = `Checklist_Karya_JB_${Date.now()}.xls`;
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                showToast("File Excel berhasil diunduh", "success");
+            } catch (err) { showToast("Gagal menyusun dokumen Excel", "error"); }
         };
+
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = src; s.onload = resolve; s.onerror = reject;
+                document.head.appendChild(s);
+            });
+        }
+    </script>
+
+    <script type="module">
+        // Kita membungkus Firebase dalam module terpisah dan try/catch
+        // Hal ini menjamin: Jika aplikasi dibuka Offline dan gagal mengambil script Firebase dari gstatic, 
+        // aplikasi TIDAK AKAN BLANK! Vanilla script di atas akan tetap berjalan murni 100% lokal.
+        
+        async function bootBackend() {
+            try {
+                if (!navigator.onLine) throw new Error("Offline pada saat load");
+
+                // Dynamic Import dari CDN Firebase (Hanya dimuat jika internet ada / cache browser ada)
+                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+                const { getAuth, signInAnonymously, signInWithCustomToken } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+                const { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, deleteDoc, onSnapshot, collection, query } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'jb-checklist-2026';
+                let firebaseConfig = null;
+                try { firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null; } catch (e) {}
+                const customToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+                if (!firebaseConfig) throw new Error("Config Firebase kosong");
+
+                const app = initializeApp(firebaseConfig);
+                
+                // Menggunakan Persistent Cache Firestore agar performa offline/online seamless
+                window.db = initializeFirestore(app, {
+                    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+                });
+                
+                const auth = getAuth(app);
+                
+                // Auth Flow
+                if (customToken) await signInWithCustomToken(auth, customToken);
+                else await signInAnonymously(auth);
+                
+                window.currentUser = auth.currentUser;
+                window.appId = appId;
+                
+                // Hook Sinkronisasi Realtime Firebase
+                const artworksRef = collection(window.db, 'artifacts', appId, 'public', 'data', 'artworks');
+                onSnapshot(query(artworksRef), { includeMetadataChanges: true }, async (snapshot) => {
+                    let hasChanges = false;
+                    
+                    snapshot.forEach((doc) => {
+                        const fbData = { id: doc.id, ...doc.data() };
+                        const existingIdx = artworksData.findIndex(a => a.id === doc.id);
+                        
+                        if (existingIdx === -1) {
+                            artworksData.push(fbData);
+                            saveToLocalDB(fbData); // Simpan ke brankas LocalDB
+                            hasChanges = true;
+                        } else if (new Date(fbData.updatedAt) > new Date(artworksData[existingIdx].updatedAt)) {
+                            // Data dari server lebih baru, timpa lokal
+                            artworksData[existingIdx] = fbData;
+                            saveToLocalDB(fbData);
+                            hasChanges = true;
+                        }
+                    });
+
+                    // Cek hapusan (Jika ada di lokal tapi tidak ada di FB snapshot)
+                    // (Hanya berlaku jika snapshot bukan dari cache)
+                    if (!snapshot.metadata.fromCache) {
+                        const fbIds = new Set();
+                        snapshot.forEach(doc => fbIds.add(doc.id));
+                        
+                        const toDelete = artworksData.filter(a => !fbIds.has(a.id));
+                        for (const item of toDelete) {
+                            artworksData = artworksData.filter(a => a.id !== item.id);
+                            await deleteFromLocalDB(item.id);
+                            hasChanges = true;
+                        }
+                    }
+
+                    if (hasChanges || artworksData.length === 0) {
+                        renderArtworks();
+                        updateStats();
+                    }
+                    
+                    document.getElementById('loadingState').classList.add('hidden');
+                    
+                    if(navigator.onLine && !snapshot.metadata.fromCache) {
+                        updateSyncStatusUI("Sinkronisasi Aktif", false);
+                    } else if (snapshot.metadata.fromCache) {
+                        updateSyncStatusUI("Offline", true);
+                    }
+
+                }, (error) => {
+                    console.error("Firestore Listen Error:", error);
+                    fallbackInit(); 
+                });
+
+                // Override fungsi delete dan save untuk sinkronisasi Firebase + LocalDB
+                window.submitSaveData = async function(newArtwork, idToSave) {
+                    try {
+                        const docRef = doc(window.db, 'artifacts', appId, 'public', 'data', 'artworks', idToSave);
+                        await setDoc(docRef, newArtwork, { merge: true });
+                        // Lokal disave via onSnapshot
+                    } catch (e) {
+                        // Jika FB gagal (offline), force save local
+                        await forceSaveLocal(newArtwork, idToSave);
+                    }
+                }
+
+                window.submitDeleteData = async function(id) {
+                    try {
+                        await deleteDoc(doc(window.db, 'artifacts', appId, 'public', 'data', 'artworks', id));
+                    } catch (e) {
+                        await forceDeleteLocal(id);
+                    }
+                }
+
+            } catch (err) {
+                console.warn("Backend Firebase tidak terjangkau. Menggunakan Mode Lokal Penuh.", err);
+                fallbackInit();
+            }
+        }
+
+        // --- FALLBACK MURNI LOKAL (Jika Offline 100%) ---
+        async function fallbackInit() {
+            updateSyncStatusUI("Offline (Mode Lokal)", true);
+            // Load dari IndexedDB Brankas
+            const localData = await loadFromLocalDB();
+            if (localData && localData.length > 0) {
+                artworksData = localData;
+            }
+            document.getElementById('loadingState').classList.add('hidden');
+            renderArtworks();
+            updateStats();
+
+            // Override dengan fallback logic
+            window.submitSaveData = async function(newArtwork, idToSave) {
+                await forceSaveLocal(newArtwork, idToSave);
+            }
+            window.submitDeleteData = async function(id) {
+                await forceDeleteLocal(id);
+            }
+        }
+
+        // Helper Force Save Local
+        async function forceSaveLocal(newArtwork, idToSave) {
+            const idx = artworksData.findIndex(a => a.id === idToSave);
+            if (idx > -1) artworksData[idx] = newArtwork;
+            else artworksData.push(newArtwork);
+            
+            await saveToLocalDB(newArtwork);
+            renderArtworks();
+            updateStats();
+        }
+
+        // Helper Force Delete Local
+        async function forceDeleteLocal(id) {
+            artworksData = artworksData.filter(a => a.id !== id);
+            await deleteFromLocalDB(id);
+            renderArtworks();
+            updateStats();
+        }
+
+        // --- BIND EVENT FORM SIMPAN ---
+        document.getElementById('artworkForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+            btn.disabled = true;
+
+            try {
+                const idToSave = currentEditId || crypto.randomUUID();
+                const timeNow = new Date().toISOString();
+                
+                const newArtwork = {
+                    id: idToSave,
+                    artist: document.getElementById('inputArtist').value.trim(),
+                    title: document.getElementById('inputTitle').value.trim(),
+                    category: document.getElementById('inputCategory').value,
+                    quantity: parseInt(document.getElementById('inputQuantity').value) || 1,
+                    dimensions: document.getElementById('inputDimensions').value.trim(),
+                    condition: document.getElementById('inputCondition').value,
+                    status: document.getElementById('inputStatus').value,
+                    notes: document.getElementById('inputNotes').value.trim(),
+                    image: base64Image,
+                    updatedAt: timeNow
+                };
+
+                if (!currentEditId) {
+                    newArtwork.createdAt = timeNow;
+                } else {
+                    const exist = artworksData.find(a => a.id === currentEditId);
+                    if(exist && exist.createdAt) newArtwork.createdAt = exist.createdAt;
+                }
+
+                // Akan lari ke fungsi Firebase (jika aktif) atau ke fallback (jika offline)
+                if(typeof window.submitSaveData === 'function') {
+                    await window.submitSaveData(newArtwork, idToSave);
+                } else {
+                    await forceSaveLocal(newArtwork, idToSave);
+                }
+
+                showToast(currentEditId ? "Karya diperbarui" : "Karya baru ditambahkan", "success");
+                window.closeFormModal();
+            } catch (err) {
+                console.error(err);
+                showToast("Terjadi kendala saat menyimpan data", "error");
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        });
+
+        // --- BIND EVENT HAPUS ---
+        window.requestDeleteArtwork = function(id) {
+            const artwork = artworksData.find(a => a.id === id);
+            if (!artwork) return;
+            
+            createCustomConfirm(`Yakin ingin menghapus karya <br><strong>"${artwork.title}"</strong>?`, async () => {
+                if(typeof window.submitDeleteData === 'function') {
+                    await window.submitDeleteData(id);
+                } else {
+                    await forceDeleteLocal(id);
+                }
+                showToast("Karya berhasil dihapus", "success");
+            });
+        };
+
+        // Mulai Bootstrapping!
+        bootBackend();
 
     </script>
 </body>
