@@ -8,6 +8,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
+    <!-- Meta tag khusus pendorong PWA di WebView (AppMySite) -->
+    <meta name="format-detection" content="telephone=no">
     <!-- Pencegahan error 404 favicon saat dimuat di AppMySite/GitHub -->
     <link rel="icon" href="data:,">
     
@@ -32,6 +34,16 @@
             padding-bottom: env(safe-area-inset-bottom);
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
+            
+            /* Cegah block teks tidak sengaja, memberikan feel Native App */
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        /* Izinkan seleksi teks (copy-paste) HANYA di kolom pengisian form */
+        input, textarea, select {
+            -webkit-user-select: auto !important;
+            user-select: auto !important;
         }
         
         /* Custom Scrollbar yang responsif */
@@ -269,15 +281,15 @@
                         <label class="block text-xs font-bold text-slate-600 mb-1.5 uppercase tracking-wide">Catatan Tambahan</label>
                         <textarea id="inputNotes" rows="2" class="w-full px-4 py-3 border border-slate-300 rounded-xl bg-slate-50 focus:bg-white resize-none outline-none" placeholder="Kondisi bingkai, instruksi, dll..."></textarea>
                     </div>
+
+                    <!-- Tombol dipindah ke DALAM form agar Native Submit bekerja di WebView & tidak terhalang Keyboard -->
+                    <div class="pt-4 mt-2 border-t border-slate-100 flex gap-3 justify-end pb-[env(safe-area-inset-bottom)]">
+                        <button type="button" onclick="window.closeFormModal()" class="px-5 py-3 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl outline-none w-full sm:w-auto transition">Batal</button>
+                        <button type="submit" id="saveBtn" class="px-6 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md shadow-blue-500/30 w-full sm:w-auto flex items-center justify-center gap-2 transition outline-none"><i class="fa-solid fa-save"></i> Simpan</button>
+                    </div>
                 </form>
             </div>
             
-            <!-- Sticky Footer Tombol -->
-            <div class="p-4 md:p-5 border-t border-slate-100 bg-white rounded-b-3xl shrink-0 flex gap-3 justify-end pb-[calc(1rem+env(safe-area-inset-bottom))] sm:pb-5">
-                <button type="button" onclick="window.closeFormModal()" class="px-5 py-3 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl outline-none w-full sm:w-auto transition">Batal</button>
-                <button type="button" onclick="document.getElementById('artworkForm').dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}))" id="saveBtn" class="px-6 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md shadow-blue-500/30 w-full sm:w-auto flex items-center justify-center gap-2 transition outline-none"><i class="fa-solid fa-save"></i> Simpan</button>
-            </div>
-
         </div>
     </div>
 
@@ -878,7 +890,8 @@
                 // Trigger download
                 document.body.appendChild(link);
                 link.click();
-                document.body.removeChild(link);
+                // Jeda 100ms sangat krusial untuk Android WebView agar unduhan tidak batal otomatis
+                setTimeout(() => document.body.removeChild(link), 100);
                 showToast("Berhasil menyimpan gambar JPG", "success");
             } catch (err) { 
                 showToast("Gagal merender gambar", "error"); 
@@ -907,7 +920,8 @@
                 
                 document.body.appendChild(link); 
                 link.click(); 
-                document.body.removeChild(link);
+                // Jeda 100ms sangat krusial untuk Android WebView
+                setTimeout(() => document.body.removeChild(link), 100);
                 showToast("File Excel berhasil diunduh", "success");
             } catch (err) { 
                 showToast("Gagal menyusun dokumen Excel", "error");
