@@ -282,7 +282,6 @@
                         <textarea id="inputNotes" rows="2" class="w-full px-4 py-3 border border-slate-300 rounded-xl bg-slate-50 focus:bg-white resize-none outline-none" placeholder="Kondisi bingkai, instruksi, dll..."></textarea>
                     </div>
 
-                    <!-- Tombol dipindah ke DALAM form agar Native Submit bekerja di WebView & tidak terhalang Keyboard -->
                     <div class="pt-4 mt-2 border-t border-slate-100 flex gap-3 justify-end pb-[env(safe-area-inset-bottom)]">
                         <button type="button" onclick="window.closeFormModal()" class="px-5 py-3 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl outline-none w-full sm:w-auto transition">Batal</button>
                         <button type="submit" id="saveBtn" class="px-6 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md shadow-blue-500/30 w-full sm:w-auto flex items-center justify-center gap-2 transition outline-none"><i class="fa-solid fa-save"></i> Simpan</button>
@@ -375,7 +374,7 @@
                     const tx = db.transaction(STORE_NAME, 'readonly');
                     const req = tx.objectStore(STORE_NAME).getAll();
                     req.onsuccess = () => resolve(req.result || []);
-                    req.onerror = () => resolve([]); // Tetap resolve array kosong jika error
+                    req.onerror = () => resolve([]); 
                 });
             } catch(e) { return []; }
         }
@@ -454,7 +453,6 @@
             }
 
             modal.classList.remove('hidden');
-            // Sedikit delay agar transisi CSS berjalan
             setTimeout(() => {
                 modal.classList.remove('opacity-0');
                 const content = document.getElementById('formModalContent');
@@ -482,14 +480,12 @@
         imgInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
-                // Sangat Aman Untuk Webview/AppMySite: Maks 600px, Qualitas 0.70 (Menghemat IndexedDB)
                 compressImage(file, 600, 600, 0.70).then(base64 => {
                     base64Image = base64;
                     showImagePreview(base64);
-                    imgInput.value = ''; // Reset
+                    imgInput.value = ''; 
                 }).catch(err => {
                     showToast("Gagal memproses foto. Coba foto lain.", "error");
-                    console.error("Compression Error:", err);
                 });
             }
         });
@@ -521,7 +517,6 @@
                         const canvas = document.createElement('canvas');
                         let w = img.width, h = img.height;
                         
-                        // Logika perhitungan aspek rasio (Bugfix)
                         if (w > h) { 
                             if (w > maxWidth) { h = Math.round(h * (maxWidth / w)); w = maxWidth; } 
                         } else { 
@@ -650,7 +645,6 @@
             const safeTitle = escapeHTML(item.title);
             const safeArtist = escapeHTML(item.artist);
             
-            // Gambar Fallback sangat aman
             const fallbackSrc = "data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22400%22%20height%3D%22400%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%23f1f5f9%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20font-family%3D%22sans-serif%22%20font-size%3D%2220%22%20fill%3D%22%2394a3b8%22%20text-anchor%3D%22middle%22%20dy%3D%22.3em%22%3ETanpa%20Foto%3C%2Ftext%3E%3C%2Fsvg%3E";
             const imgUrl = item.image || fallbackSrc;
             
@@ -745,7 +739,6 @@
         window.handleZoomIn = function() { if (zScale < 4) { zScale += scaleStep; applyZoomTransform(); } };
         window.handleZoomOut = function() { if (zScale > 0.5) { zScale -= scaleStep; applyZoomTransform(); } };
 
-        // Panning Touch Mobile (Passive direkomendasikan untuk peforma)
         let touchStartX, touchStartY;
         zoomImg.addEventListener('touchstart', (e) => {
             if(e.touches.length === 1) {
@@ -765,7 +758,6 @@
 
         zoomImg.addEventListener('touchend', () => { isDragging = false; });
         
-        // Panning Mouse Desktop
         zoomImg.addEventListener('mousedown', (e) => {
             e.preventDefault();
             isDragging = true;
@@ -786,7 +778,6 @@
             else if (e.deltaY > 0 && zScale > 0.5) zScale -= 0.25;
             applyZoomTransform();
         }, {passive: false});
-
 
         document.getElementById('artworkForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -820,7 +811,6 @@
                     if(exist && exist.createdAt) newArtwork.createdAt = exist.createdAt;
                 }
 
-                // Redirect ke fungsi penyimpanan ganda (Lokal -> Server)
                 if(typeof window.submitSaveData === 'function') {
                     await window.submitSaveData(newArtwork, idToSave);
                 } else {
@@ -856,55 +846,107 @@
             });
         };
 
-        // Ekspor
+        // FUNGSI INTI: Handle ekspor baik melalui Download <a> atau Web Share API (Sangat penting untuk Android WebView)
+        async function downloadOrShareMobileFriendly(filename, blob) {
+            // 1. Coba gunakan Web Share API (Opsi terbaik untuk Native PWA / Webview / APK)
+            try {
+                const file = new File([blob], filename, { type: blob.type });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        title: 'Ekspor Laporan JB 2026',
+                        text: 'Berikut adalah file laporan data Checklist JB 2026.',
+                        files: [file]
+                    });
+                    showToast("Berhasil membagikan/menyimpan file", "success");
+                    return; // Hentikan fungsi jika berhasil menggunakan Share API
+                }
+            } catch (err) {
+                // Jika dibatalkan user, hentikan. Jika error lain, lanjut ke Fallback.
+                if (err.name === 'AbortError') return; 
+                console.warn("Share API dibatalkan/gagal, mencoba metode download klasik", err);
+            }
+
+            // 2. Fallback: Download via Data URI (Sangat kebal blokir di WebView WebIntoApp)
+            try {
+                showToast("Mencoba menyimpan file ke perangkat...", "info");
+                const reader = new FileReader();
+                reader.readAsDataURL(blob);
+                reader.onloadend = function() {
+                    const base64data = reader.result;
+                    const link = document.createElement('a');
+                    link.href = base64data;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    setTimeout(() => document.body.removeChild(link), 300); // 300ms krusial untuk WebView
+                    showToast("File berhasil diunduh!", "success");
+                };
+            } catch (err) {
+                console.error("Ekspor fallback gagal:", err);
+                showToast("Aplikasi butuh izin penyimpanan (Storage).", "error");
+            }
+        }
+
         window.exportPrint = function() { 
-            try { window.print(); } 
-            catch(e) { showToast("Fitur print tidak didukung di perangkat ini", "error"); }
+            try { 
+                showToast("Membuka menu print...", "info");
+                setTimeout(() => window.print(), 500);
+            } 
+            catch(e) { showToast("Fitur print tidak didukung di perangkat ini. Gunakan Export JPG/Excel.", "error"); }
         };
 
         window.exportJPG = async function() {
             if (artworksData.length === 0) return showToast("Brankas kosong", "warning");
             
-            // Cek ketersediaan script, muat jika offline tidak bisa dihindari gagal tapi tangkap error
             if (typeof html2canvas === 'undefined') {
                 try {
-                    showToast("Menyiapkan alat potret...", "info");
+                    showToast("Menyiapkan alat potret resolusi tinggi...", "info");
                     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
                 } catch(e) { 
                     return showToast("Butuh koneksi internet pertama kali untuk fitur ini.", "error"); 
                 }
             }
             
-            showToast("Memotret laporan...", "info");
+            showToast("Memotret laporan resolusi tinggi... Mohon tunggu.", "info");
             const elementsToHide = document.querySelectorAll('.export-hide, #controls-area');
             elementsToHide.forEach(el => el.style.display = 'none');
             
-            try {
-                const canvas = await html2canvas(document.getElementById('export-container'), {
-                    scale: 2, useCORS: true, backgroundColor: '#f8fafc', logging: false
-                });
-                const link = document.createElement('a');
-                link.download = `Checklist_JB_2026_${Date.now()}.jpg`;
-                link.href = canvas.toDataURL('image/jpeg', 0.85);
-                
-                // Trigger download
-                document.body.appendChild(link);
-                link.click();
-                // Jeda 100ms sangat krusial untuk Android WebView agar unduhan tidak batal otomatis
-                setTimeout(() => document.body.removeChild(link), 100);
-                showToast("Berhasil menyimpan gambar JPG", "success");
-            } catch (err) { 
-                showToast("Gagal merender gambar", "error"); 
-                console.error(err);
-            }
-            finally { elementsToHide.forEach(el => el.style.display = ''); }
+            // Sedikit jeda agar UI benar-benar bersih sebelum difoto
+            setTimeout(async () => {
+                try {
+                    const canvas = await html2canvas(document.getElementById('export-container'), {
+                        scale: 3, // Ditingkatkan ke skala 3 untuk Resolusi Super Tinggi (HD)
+                        useCORS: true, 
+                        allowTaint: true,
+                        backgroundColor: '#f8fafc', 
+                        logging: false,
+                        imageTimeout: 0
+                    });
+                    
+                    canvas.toBlob(async (blob) => {
+                        if (blob) {
+                            await downloadOrShareMobileFriendly(`Checklist_JB_2026_${Date.now()}.jpg`, blob);
+                        } else {
+                            showToast("Gagal memproses gambar", "error");
+                        }
+                        elementsToHide.forEach(el => el.style.display = '');
+                    }, 'image/jpeg', 0.95); // Kualitas kompresi JPG dinaikkan ke 95%
+                    
+                } catch (err) { 
+                    showToast("Gagal merender gambar", "error"); 
+                    console.error(err);
+                    elementsToHide.forEach(el => el.style.display = '');
+                }
+            }, 300);
         };
 
-        window.exportExcel = function() {
+        window.exportExcel = async function() {
             if (artworksData.length === 0) return showToast("Brankas kosong", "warning");
             showToast("Menyusun laporan Excel...", "info");
             
             try {
+                // Tambahkan UTF-8 BOM agar Excel di HP tidak salah membaca karakter unik
+                const BOM = "\uFEFF";
                 let tableHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>table { border-collapse: collapse; width: 100%; font-family: sans-serif; } th { background-color: #0f172a; color: #ffffff; padding: 12px; font-size: 13px; text-align: left; border: 1px solid #cbd5e1; } td { padding: 12px; border: 1px solid #cbd5e1; vertical-align: middle; font-size: 13px; color: #334155; } img { max-width: 100px; max-height: 100px; object-fit: cover; border-radius: 4px; } h2 { color: #0f172a; margin-bottom: 2px; } h4 { color: #3b82f6; margin-top: 0; margin-bottom: 20px; font-style: italic; }</style></head><body><h2>Jakarta Biennale 2026</h2><h4>'KEBAL' - Checklist Logistik Karya</h4><table><thead><tr><th>No</th><th>Foto</th><th>Seniman & Judul</th><th>Detail Karya</th><th>Fisik</th><th>Status</th><th>Catatan</th></tr></thead><tbody>`;
 
                 [...artworksData].sort((a, b) => new Date(b.updatedAt||0) - new Date(a.updatedAt||0)).forEach((item, index) => {
@@ -913,16 +955,9 @@
                 });
                 tableHtml += `</tbody></table></body></html>`;
 
-                const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `Checklist_Karya_JB_${Date.now()}.xls`;
+                const blob = new Blob([BOM + tableHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+                await downloadOrShareMobileFriendly(`Checklist_Karya_JB_${Date.now()}.xls`, blob);
                 
-                document.body.appendChild(link); 
-                link.click(); 
-                // Jeda 100ms sangat krusial untuk Android WebView
-                setTimeout(() => document.body.removeChild(link), 100);
-                showToast("File Excel berhasil diunduh", "success");
             } catch (err) { 
                 showToast("Gagal menyusun dokumen Excel", "error");
                 console.error(err);
@@ -939,7 +974,6 @@
     </script>
 
     <script type="module">
-        // Helper Simpan Lokal Murni (Instan)
         window.forceSaveLocal = async function(newArtwork, idToSave) {
             const idx = artworksData.findIndex(a => a.id === idToSave);
             if (idx > -1) artworksData[idx] = newArtwork;
@@ -950,7 +984,6 @@
             updateStats();
         }
 
-        // Helper Hapus Lokal Murni (Instan)
         window.forceDeleteLocal = async function(id) {
             artworksData = artworksData.filter(a => a.id !== id);
             await deleteFromLocalDB(id);
@@ -959,7 +992,6 @@
         }
 
         async function bootAppFirst() {
-            // 1. TAHAP PERTAMA: Render data dari brankas lokal SEKETIKA (Offline-First 100%)
             updateSyncStatusUI("Memuat Brankas Lokal...", true);
             const localData = await loadFromLocalDB();
             if (localData && localData.length > 0) {
@@ -969,10 +1001,8 @@
             updateStats();
             document.getElementById('loadingState').classList.add('hidden');
             
-            // Atur default UI
             updateSyncStatusUI(navigator.onLine ? "Menyambungkan ke Server..." : "Offline (Mode Lokal)", !navigator.onLine);
 
-            // 2. TAHAP KEDUA: Coba koneksi ke Firebase (Background) dengan Try/Catch extra ketat
             try {
                 if (!navigator.onLine) throw new Error("Sedang offline murni");
 
@@ -994,7 +1024,6 @@
                 window.db = getFirestore(app);
                 await signInAnonymously(getAuth(app));
 
-                // Logika Sinkronisasi Sangat Aman (Merge Tanpa Hapus Paksa Data Lokal Baru)
                 const artworksRef = collection(window.db, 'artifacts', appId, 'public', 'data', 'artworks');
                 onSnapshot(query(artworksRef), (snapshot) => {
                     let hasChanges = false;
@@ -1003,7 +1032,6 @@
                         const fbData = { id: doc.id, ...doc.data() };
                         const existingIdx = artworksData.findIndex(a => a.id === doc.id);
                         
-                        // Perbarui data lokal JIKA data belum ada atau data di server lebih baru
                         if (existingIdx === -1) {
                             artworksData.push(fbData);
                             saveToLocalDB(fbData);
@@ -1026,9 +1054,8 @@
                     updateSyncStatusUI("Offline (Data Tersimpan Lokal)", true);
                 });
 
-                // Override fungsi aksi: LAKUKAN LOKAL DULU, baru Server (Optimistic Update)
                 window.submitSaveData = async function(newArtwork, idToSave) {
-                    await window.forceSaveLocal(newArtwork, idToSave); // Instan tanpa delay
+                    await window.forceSaveLocal(newArtwork, idToSave);
                     try {
                         const docRef = doc(window.db, 'artifacts', appId, 'public', 'data', 'artworks', idToSave);
                         await setDoc(docRef, newArtwork, { merge: true });
@@ -1036,7 +1063,7 @@
                 }
 
                 window.submitDeleteData = async function(id) {
-                    await window.forceDeleteLocal(id); // Instan dihapus dari layar
+                    await window.forceDeleteLocal(id);
                     try {
                         await deleteDoc(doc(window.db, 'artifacts', appId, 'public', 'data', 'artworks', id));
                     } catch (e) { console.warn("Background delete tertunda"); }
@@ -1045,7 +1072,6 @@
             } catch (err) {
                 console.warn("Murni Berjalan di Mode Offline / Lokal Terisolasi.", err.message);
                 
-                // Gunakan default local jika gagal import Firebase atau terblokir kebijakan Webview
                 window.submitSaveData = async function(newArtwork, idToSave) {
                     await window.forceSaveLocal(newArtwork, idToSave);
                 }
@@ -1055,9 +1081,7 @@
             }
         }
 
-        // Mulai Bootstrapping Tahan Banting!
         bootAppFirst();
-
     </script>
 </body>
 </html>
